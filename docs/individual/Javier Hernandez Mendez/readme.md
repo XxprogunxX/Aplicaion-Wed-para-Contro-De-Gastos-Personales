@@ -157,15 +157,3 @@ Perceptible: La información debe presentarse de manera que los usuarios puedan 
 Operable: Los usuarios deben poder navegar e interactuar. Todo debe ser accesible por teclado, dar tiempo suficiente para leer/interactuar, evitar contenido que cause convulsiones (parpadeos rápidos).
 Comprensible: La información y operación de la interfaz debe ser comprensible. Usar lenguaje claro, comportamiento predecible, ayudar a evitar y corregir errores.
 Robusto: El contenido debe ser interpretable por diversas tecnologías. Usar HTML semántico válido, compatible con lectores de pantalla.
-Herramientas prácticas:
-
-Atributos ARIA (Accessible Rich Internet Applications): aria-label, aria-describedby, aria-expanded
-Elementos semánticos HTML5: <nav>, <main>, <article>, <aside>, <button>
-Skip links: Enlaces invisibles que permiten saltar navegación repetitiva
-Landmarks: Regiones identificables por lectores de pantalla
-Formularios accesibles: <label> asociados correctamente, mensajes de error claros
-
-Testing:
-
-Navegar tu sitio solo con teclado
-Usar lectores de pantalla (NVDA, JAWS, VoiceOver)
