@@ -1,5 +1,6 @@
 # Aplicación Web para Control de Gastos Personales
 
+[![Node.js CI](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions/workflows/node.yml/badge.svg)](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions)
 [![CI/CD Pipeline Backend](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions)
 [![CI/CD Pipeline Frontend](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions)
 
