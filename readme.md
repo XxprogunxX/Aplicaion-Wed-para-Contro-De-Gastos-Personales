@@ -50,15 +50,42 @@ Repositorio del proyecto para la gestión y control de gastos personales.
 - Gestor de paquetes: npm
 - Containerización: Docker
 - Control de versiones: Git
+- CI/CD: GitHub Actions
 
-## Equipo
-- Tech Lead: [Nombre]
-- Frontend: [Nombre]
-- Backend: [Nombre]
-- QA / Testing: [Nombre]
-- DevOps / CI-CD: [Nombre]
+## CI/CD Pipeline
 
-- MongoDB (local o MongoDB Atlas)
+Este proyecto incluye pipelines automáticos de **Integración Continua** configurados con GitHub Actions:
+
+### Workflows disponibles
+
+1. **node.yml** - Pipeline general
+   - Se ejecuta en: Push y Pull Request a `master`
+   - Acciones: Instala dependencias y ejecuta tests
+
+2. **backend-ci.yml** - Pipeline del backend
+   - Se ejecuta en: Push y Pull Request a `master` y `develop` cuando hay cambios en `/backend`
+   - Matriz de pruebas: Node 18.x y 20.x
+   - Acciones:
+     - Instala dependencias (`npm ci`)
+     - Ejecuta linter (`npm run lint`)
+     - Ejecuta tests (`npm test`)
+     - Construye imagen Docker
+
+3. **frontend-ci.yml** - Pipeline del frontend
+   - Se ejecuta en: Push y Pull Request a `master` y `develop` cuando hay cambios en `/frontend`
+   - Matriz de pruebas: Node 18.x y 20.x
+   - Acciones:
+     - Instala dependencias (`npm ci`)
+     - Ejecuta linter (`npm run lint`)
+     - Verifica tipos TypeScript (`npm run type-check`)
+     - Construye el proyecto (`npm run build`)
+     - Construye imagen Docker
+
+### Estado de los Workflows
+
+Los workflows se configuran automáticamente en GitHub cuando haces push a las ramas configuradas. Puedes ver el estado de los pipelines en la pestaña **Actions** de tu repositorio.
+
+
 
 ### Instalación del Frontend
 
