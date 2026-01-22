@@ -1,6 +1,11 @@
 # Aplicación Web para Control de Gastos Personales
 
-Repositorio del proyecto para la gestión y control de gastos personales.
+[![CI/CD Pipeline Backend](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions)
+[![CI/CD Pipeline Frontend](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/XxprogunxX/Aplicaion-Wed-para-Contro-De-Gastos-Personales/actions)
+
+Repositorio del proyecto para la **gestión y control de gastos personales**. Una aplicación fullstack moderna con backend API y frontend responsivo.
+
+El backend está implementado y expone una API REST funcional; el frontend cuenta con Dockerfile y package.json configurados, aunque la app aún está en construcción (el script de build es provisional).
 
 ## Estructura del repositorio
 
