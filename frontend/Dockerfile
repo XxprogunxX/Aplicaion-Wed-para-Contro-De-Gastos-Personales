@@ -1,8 +1,15 @@
 
 
 # Dependencies
+FROM node:18
 
-# Builder
+WORKDIR /app
 
+COPY package*.json ./
+RUN npm install
 
-# Runner
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev"]
