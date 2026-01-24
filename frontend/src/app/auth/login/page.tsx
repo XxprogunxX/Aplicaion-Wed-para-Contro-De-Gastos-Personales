@@ -1,13 +1,15 @@
-# TODO: Implementar página de login
-# Ruta: /auth/login
+/*
+TODO: Implementar página de login
+Ruta: /auth/login
 
-// Funcionalidades:
-// - Formulario de login (email, password)
-// - Validación de campos
-// - Llamada a API de autenticación
-// - Guardar token JWT
-// - Redireccionar al dashboard
-// - Link a página de registro
+Funcionalidades:
+- Formulario de login (email, password)
+- Validación de campos
+- Llamada a API de autenticación
+- Guardar token JWT
+- Redireccionar al dashboard
+- Link a página de registro
+*/
 
 export default function LoginPage() {
   return (

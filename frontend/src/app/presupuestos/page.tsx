@@ -1,12 +1,14 @@
-# TODO: Implementar página de presupuestos
-# Ruta: /presupuestos
+/*
+TODO: Implementar página de presupuestos
+Ruta: /presupuestos
 
-// Funcionalidades:
-// - Listar presupuestos activos
-// - Crear nuevo presupuesto
-// - Ver progreso (gastado vs presupuesto)
-// - Alertas cuando se exceda el presupuesto
-// - Editar/eliminar presupuestos
+Funcionalidades:
+- Listar presupuestos activos
+- Crear nuevo presupuesto
+- Ver progreso (gastado vs presupuesto)
+- Alertas cuando se exceda el presupuesto
+- Editar/eliminar presupuestos
+*/
 
 export default function PresupuestosPage() {
   return (

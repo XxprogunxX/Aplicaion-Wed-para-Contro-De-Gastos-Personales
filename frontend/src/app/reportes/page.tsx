@@ -1,12 +1,14 @@
-# TODO: Implementar página de reportes
-# Ruta: /reportes
+/*
+TODO: Implementar página de reportes
+Ruta: /reportes
 
-// Funcionalidades:
-// - Mostrar gráficas de gastos (por mes, categoría)
-// - Selector de período (mes/año)
-// - Tabla resumen
-// - Exportar reportes (PDF, CSV)
-// - Comparación entre períodos
+Funcionalidades:
+- Mostrar gráficas de gastos (por mes, categoría)
+- Selector de período (mes/año)
+- Tabla resumen
+- Exportar reportes (PDF, CSV)
+- Comparación entre períodos
+*/
 
 export default function ReportesPage() {
   return (
