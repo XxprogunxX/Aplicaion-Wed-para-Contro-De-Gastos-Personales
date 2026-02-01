@@ -1,31 +1,44 @@
-// TODO: Implementar rutas de Express
+/**
+ * Rutas de la aplicación
+ */
+const express = require('express')
+const router = express.Router()
 
-// Rutas de Autenticación (/api/auth)
-// POST /register - Registrar usuario
-// POST /login - Iniciar sesión
-// POST /logout - Cerrar sesión
-// GET /profile - Obtener perfil del usuario
+// Controladores
+const gastosController = require('../controllers/gastosController')
 
-// Rutas de Gastos (/api/gastos)
-// GET / - Obtener todos los gastos del usuario
-// GET /:id - Obtener gasto por ID
-// POST / - Crear nuevo gasto
-// PUT /:id - Actualizar gasto
-// DELETE /:id - Eliminar gasto
+// ==================== RUTAS DE GASTOS ====================
 
-// Rutas de Categorías (/api/categorias)
-// GET / - Obtener todas las categorías
-// POST / - Crear nueva categoría
-// PUT /:id - Actualizar categoría
-// DELETE /:id - Eliminar categoría
+/**
+ * GET /api/gastos
+ * Obtener todos los gastos del usuario
+ */
+router.get('/', gastosController.getAll)
 
-// Rutas de Presupuestos (/api/presupuestos)
-// GET / - Obtener todos los presupuestos
-// POST / - Crear nuevo presupuesto
-// PUT /:id - Actualizar presupuesto
-// DELETE /:id - Eliminar presupuesto
+/**
+ * GET /api/gastos/:id
+ * Obtener un gasto específico por ID
+ */
+router.get('/:id', gastosController.getById)
 
-// Rutas de Reportes (/api/reportes)
-// GET /mensual?mes=1&anio=2026 - Reporte mensual
-// GET /anual?anio=2026 - Reporte anual
-// GET /categoria - Reporte por categoría
+/**
+ * POST /api/gastos
+ * Crear nuevo gasto
+ * Body: { descripcion, monto, categoria }
+ */
+router.post('/', gastosController.create)
+
+/**
+ * PUT /api/gastos/:id
+ * Actualizar gasto existente
+ * Body: { descripcion?, monto?, categoria? }
+ */
+router.put('/:id', gastosController.update)
+
+/**
+ * DELETE /api/gastos/:id
+ * Eliminar gasto
+ */
+router.delete('/:id', gastosController.deleteGasto)
+
+module.exports = router
