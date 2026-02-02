@@ -205,8 +205,8 @@ export default function NotFound() {
 
           {/* Nave espacial en el medio */}
           <div className="flex-shrink-0 mx-2 md:mx-4">
-            <RocketShip />
-          </div>
+              <RocketShip />
+            </div>
 
           {/* Número 4 derecho */}
           <div className="text-white">
@@ -261,13 +261,11 @@ function RocketShip() {
   return (
     <div 
       className={styles.rocketContainer}
+      aria-hidden="true"
     >
       <div className={styles.rocketGlow} />
-      <img
-        src="/images/onmi-removebg-preview.png"
-        alt="Nave espacial pixel art"
-        className={styles.rocketImage}
-      />
+      {/* Imagen removida: elemento decorativo en su lugar */}
+      <div className={styles.rocketImage} aria-hidden="true" />
     </div>
   )
 }

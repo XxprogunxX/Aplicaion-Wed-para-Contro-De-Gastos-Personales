@@ -6,6 +6,10 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  /* Variables usadas por pantallas de error */
+  --bg: #0b1220;
+  --muted: rgba(255,255,255,0.75);
+  --accent: #2563eb;
 }
 
 body {

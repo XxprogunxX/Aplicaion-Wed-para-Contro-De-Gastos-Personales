@@ -103,7 +103,10 @@
 .rocketImage {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  background-image: url('/images/onmi-removebg-preview.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
   image-rendering: pixelated;
   filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
 }

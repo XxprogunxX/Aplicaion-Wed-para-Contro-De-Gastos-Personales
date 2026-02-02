@@ -1,0 +1,205 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #071026 0%, #0b1220 100%);
+  color: #fff;
+  font-family: var(--font-press-start), system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 3.5rem; /* espacio para menú persistente */
+}
+
+/* Space background with stars and nebulas */
+.spaceStars {
+  z-index: 1;
+}
+
+.star {
+  background-color: white;
+  position: absolute;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  animation: twinkle infinite ease-in-out;
+}
+
+.spaceNebula {
+  z-index: 2;
+  opacity: 0.6;
+  filter: blur(40px);
+}
+
+.nebula {
+  position: absolute;
+  border-radius: 50%;
+  animation: nebulaPulse 10s infinite alternate;
+}
+
+.nebula1 {
+  background: radial-gradient(circle, rgba(76, 29, 149, 0.4) 0%, rgba(0, 0, 0, 0) 70%);
+  width: 60vw;
+  height: 60vw;
+  top: -10%;
+  left: -10%;
+  animation-duration: 15s;
+}
+
+.nebula2 {
+  background: radial-gradient(circle, rgba(29, 78, 216, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+  width: 50vw;
+  height: 50vw;
+  bottom: -10%;
+  right: -10%;
+  animation-duration: 20s;
+  animation-delay: -5s;
+}
+
+.nebula3 {
+  background: radial-gradient(circle, rgba(190, 24, 93, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+  width: 40vw;
+  height: 40vw;
+  top: 40%;
+  left: 30%;
+  animation-duration: 25s;
+  animation-delay: -10s;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Menú persistente integrado y discreto */
+.persistentMenu {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.18);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.menuList {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 0.6rem 1rem;
+  list-style: none;
+  margin: 0;
+}
+
+.menuLink {
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.menuLink:focus, .menuLink:hover {
+  color: #fff;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+}
+
+/* Layout principal: left texto, right ilustración */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  padding: 6rem 8rem;
+  position: relative;
+  z-index: 10;
+  min-height: calc(100vh - 3.5rem);
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; padding: 3rem 2rem; gap: 3rem; }
+  .right { order: -1; }
+}
+
+.left { max-width: 620px; }
+
+.breadcrumbNav { margin-bottom: 2rem; }
+
+.breadcrumbList { display: flex; align-items: center; gap: 0.75rem; list-style: none; padding: 0; margin: 0; }
+
+.breadcrumbLink { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.875rem; }
+
+.breadcrumbLink:focus, .breadcrumbLink:hover { color: #fff; outline: none; box-shadow: 0 0 0 4px rgba(255,255,255,0.06); }
+
+.separator { color: rgba(255,255,255,0.45); }
+
+.current { font-weight: 700; }
+
+.title { font-size: 2.25rem; margin: 0 0 1.5rem 0; line-height: 1.3; letter-spacing: 0.05em; }
+
+.description { color: rgba(255,255,255,0.85); margin-bottom: 2.5rem; line-height: 1.8; font-size: 1rem; }
+
+.actions { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+
+.primaryButton {
+  background: linear-gradient(90deg,var(--accent),#1e40af);
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.2);
+  padding: 1rem 1.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(37,99,235,0.3);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37,99,235,0.5);
+  border-color: rgba(255,255,255,0.4);
+}
+
+.primaryButton:active {
+  transform: translateY(0);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.3), 0 2px 8px rgba(37,99,235,0.4);
+  background: linear-gradient(90deg,#1e40af,#1e3a8a);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes nebulaPulse {
+  0% { opacity: 0.4; transform: scale(1); }
+  100% { opacity: 0.7; transform: scale(1.1); }
+}
+
+.secondaryLink { color: rgba(255,255,255,0.7); text-decoration: underline; padding: 0.5rem 0; transition: all 0.2s ease; border-bottom: 2px solid transparent; }
+
+.secondaryLink:hover { color: #fff; border-bottom-color: rgba(37,99,235,0.5); }
+
+.secondaryLink:active { color: rgba(37,99,235,0.9); opacity: 0.8; }
+
+.right { display: flex; justify-content: center; align-items: center }
+
+.astro {
+  width: 320px;
+  height: 360px;
+  filter: drop-shadow(0 30px 40px rgba(0,0,0,0.6));
+  transform: translateY(-10px);
+  background-image: url('/images/astronauta-removebg-preview.png');
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: contain;
+}
+
+@media (min-width: 1200px) {
+  .astro { width: 520px; height: 560px }
+}
