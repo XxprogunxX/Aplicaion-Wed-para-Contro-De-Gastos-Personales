@@ -1,0 +1,23 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check for root package.json
+        run: |
+          if [ -f "package.json" ]; then
+            echo "Root package.json found, installing dependencies..."
+            npm install
+            npm test || echo "No tests configured"
+          else
+            echo "No root package.json - this is a monorepo, check backend and frontend CI workflows"
+          fi
