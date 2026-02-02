@@ -54,8 +54,15 @@ export interface AuthResponse {
 }
 
 export interface ApiResponse<T> {
-  success: boolean;
+  success?: boolean;
   data?: T;
-  error?: string;
+  error?: boolean;
   message?: string;
+  status?: number;
+}
+
+export interface ApiError {
+  error: boolean;
+  message: string;
+  status: number;
 }
