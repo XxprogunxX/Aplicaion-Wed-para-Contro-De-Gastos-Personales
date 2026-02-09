@@ -1,17 +1,14 @@
 const nextJest = require('next/jest');
 
 const createJestConfig = nextJest({
-  // Ruta a next.config.js
   dir: './',
 });
 
-// Configuración personalizada de Jest
 const customJestConfig = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
   moduleNameMapper: {
-    // Handle module aliases (si usas @/ en imports)
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   collectCoverageFrom: [

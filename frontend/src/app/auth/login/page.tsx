@@ -17,67 +17,96 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const response = await execute(() => api.login(email, password));
-      localStorage.setItem('token', response.token);
-      router.push('/');
-    } catch (err) {
-      // Error ya está manejado en el hook
-    }
+    // TODO: Rehabilitar autenticacion real cuando este el backend listo.
+    // try {
+    //   const response = await execute(() => api.login(email, password));
+    //   localStorage.setItem('token', response.token);
+    //   router.push('/');
+    // } catch (err) {
+    //   // Error ya está manejado en el hook
+    // }
+
+    localStorage.setItem('token', 'demo-token');
+    router.push('/');
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Iniciar Sesión
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-md mb-4" role="alert">
-              {error.message}
-            </div>
-          )}
-          <div className="space-y-4">
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              required
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <div>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-            </Button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4 py-10">
+      <div className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl md:min-h-[540px] md:flex-row">
+        <div className="flex min-h-[220px] flex-1 items-center justify-center bg-teal-600 px-10 py-12 text-white">
           <div className="text-center">
-            <Link
-              href="/auth/register"
-              className="text-blue-600 hover:text-blue-500"
-            >
-              ¿No tienes cuenta? Regístrate
-            </Link>
+            <div className="mx-auto mb-6 h-20 w-20 rounded-full border-2 border-white/60 bg-white/10" />
+            <p className="text-sm uppercase tracking-[0.35em] text-white/70">Logo</p>
+            <h1 className="mt-3 text-2xl font-semibold">Control de gastos</h1>
           </div>
-        </form>
+        </div>
+
+        <div className="flex flex-1 items-center justify-center px-6 py-12">
+          <div className="w-full max-w-sm rounded-2xl border border-blue-200 bg-slate-50 px-6 py-8 shadow-sm">
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-blue-500 bg-white text-3xl text-blue-600">
+                <span aria-hidden="true">◎</span>
+              </div>
+              <h2 className="text-xl font-semibold text-slate-900">Iniciar sesion</h2>
+              <p className="text-sm text-slate-500">Accede con tu correo y contrasena</p>
+            </div>
+
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
+              {error && (
+                <div
+                  className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+                  role="alert"
+                >
+                  {error.message}
+                </div>
+              )}
+
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                label="Correo electronico"
+                placeholder="correo@ejemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                label="Contrasena"
+                placeholder="********"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center gap-2 text-slate-600">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  Recordarme
+                </label>
+                <Link href="#" className="text-teal-700 hover:text-teal-600">
+                  ¿Olvidaste tu contrasena?
+                </Link>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full rounded-full">
+                {loading ? 'Iniciando sesion...' : 'Login'}
+              </Button>
+
+              <div className="text-center text-sm">
+                <Link href="/auth/register" className="text-blue-700 hover:text-blue-600">
+                  ¿No tienes cuenta? Registrate
+                </Link>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );

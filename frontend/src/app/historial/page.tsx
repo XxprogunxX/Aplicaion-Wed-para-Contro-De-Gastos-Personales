@@ -1,4 +1,4 @@
-export default function ReportesPage() {
+export default function HistorialPage() {
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-8">
       <div className="mx-auto w-full max-w-6xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

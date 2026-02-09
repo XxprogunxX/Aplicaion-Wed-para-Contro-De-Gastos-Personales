@@ -6,6 +6,10 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  /* Variables usadas por pantallas de error */
+  --bg: #0b1220;
+  --muted: rgba(255,255,255,0.75);
+  --accent: #2563eb;
 }
 
 body {
@@ -22,4 +26,27 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Ocultar header cuando se muestra la página 404 */
+body:has([data-404-page]) header {
+  display: none;
+}
+
+body:has([data-404-page]) > div {
+  background: transparent !important;
+}
+
+/* Estilos para pixel art */
+@font-face {
+  font-family: 'PixelFont';
+  src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+}
+
+/* Efecto pixelado mejorado */
+.pixel-art-container * {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
 }
