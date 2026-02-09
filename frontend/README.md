@@ -97,6 +97,13 @@ El frontend se comunica con el backend a través de la API REST:
 const gastos = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/gastos`);
 ```
 
+## Accesibilidad y manejo de foco
+
+- Al abrir el modal se guarda el elemento activo y se mueve el foco al primer control disponible.
+- Al cerrar el modal (click o Escape) se restaura el foco al elemento que lo abrio.
+- Los menus asignan foco al primer item al abrir y lo regresan al boton al cerrar.
+- Las listas interactivas usan `focus()` para mantener el cursor en el campo de entrada.
+
 ## Despliegue
 
 ### Vercel (Recomendado)
