@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Courier_Prime, Roboto_Mono, Press_Start_2P } from 'next/font/google'
+import LayoutShell from '@/components/layout/LayoutShell'
 import './globals.css'
 
 const courierPrime = Courier_Prime({
@@ -33,11 +34,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${courierPrime.variable} ${robotoMono.variable} ${pressStart2P.variable}`}>
-        <div className="min-h-screen bg-gray-50">
-          <main>
-            {children}
-          </main>
-        </div>
+        <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
   )
