@@ -12,7 +12,7 @@ const authMiddleware = require('./middleware/auth')
 // Rutas
 const gastosRoutes = require('./routes/routes')
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3003
 
 // Configuración
 app.use(express.json())

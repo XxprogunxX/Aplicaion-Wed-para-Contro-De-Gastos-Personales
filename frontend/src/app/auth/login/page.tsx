@@ -26,8 +26,15 @@ export default function LoginPage() {
     //   // Error ya está manejado en el hook
     // }
 
-    localStorage.setItem('token', 'demo-token');
+    localStorage.setItem('token', 'token-valido');
     router.push('/');
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      router.back();
+    }
   };
 
   return (
@@ -51,7 +58,7 @@ export default function LoginPage() {
               <p className="text-sm text-slate-500">Accede con tu correo y contrasena</p>
             </div>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit} onKeyDown={handleKeyDown} noValidate>
               {error && (
                 <div
                   className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"

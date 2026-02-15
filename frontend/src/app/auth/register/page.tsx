@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -11,6 +12,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -23,6 +25,13 @@ export default function RegisterPage() {
       return;
     }
     setError('');
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      router.back();
+    }
   };
 
   return (
@@ -46,7 +55,7 @@ export default function RegisterPage() {
               <p className="text-sm text-slate-500">Registra tus datos</p>
             </div>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
               {error && (
                 <div
                   className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
