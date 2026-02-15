@@ -3,6 +3,7 @@
  */
 const express = require('express')
 const app = express()
+const cors = require('cors')
 
 // Middlewares
 const errorHandler = require('./middleware/errorHandler')
@@ -15,6 +16,13 @@ const gastosRoutes = require('./routes/routes')
 const PORT = process.env.PORT || 3003
 
 // Configuración
+app.use(
+  cors({
+    origin: 'http://localhost:3001',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+)
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
