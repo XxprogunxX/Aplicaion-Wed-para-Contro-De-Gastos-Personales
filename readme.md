@@ -49,7 +49,7 @@ El backend está implementado y expone una API REST funcional; el frontend cuent
 - Runtime: Node.js
 - Framework: Express.js
 - Lenguaje: JavaScript (ES6+)
-- Base de datos: MongoDB
+- Base de datos:
 - Autenticación: JWT
 
 ### Herramientas
