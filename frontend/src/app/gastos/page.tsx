@@ -16,8 +16,7 @@ const initialFormState = {
 
 export default function GastosPage() {
   const [form, setForm] = useState(initialFormState);
-  const [successMessage, setSuccessMessage] = useState('');
-  const { loading, error, execute, reset } = useApi<Gasto>();
+  const { loading, execute, reset } = useApi<Gasto>();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -28,13 +27,11 @@ export default function GastosPage() {
 
   const handleCancel = () => {
     setForm(initialFormState);
-    setSuccessMessage('');
     reset();
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setSuccessMessage('');
 
     const montoValue = Number(form.monto);
     if (!form.descripcion || !form.categoria || !form.monto || Number.isNaN(montoValue)) {
@@ -42,19 +39,20 @@ export default function GastosPage() {
     }
 
     try {
-      await execute(() =>
-        api.createGasto({
-          descripcion: form.descripcion,
-          monto: montoValue,
-          categoria: form.categoria,
-          fecha: form.fecha,
-          metodoPago: form.metodoPago,
-        })
+      await execute(
+        () =>
+          api.createGasto({
+            descripcion: form.descripcion,
+            monto: montoValue,
+            categoria: form.categoria,
+            fecha: form.fecha,
+            metodoPago: form.metodoPago,
+          }),
+        { successMessage: '✓ Gasto registrado correctamente' }
       );
-      setSuccessMessage('Exito');
       setForm(initialFormState);
     } catch {
-      // error ya esta en el hook
+      // error ya está siendo manejado en el hook
     }
   };
 
@@ -77,10 +75,11 @@ export default function GastosPage() {
   };
 
   return (
+    
     <div className="min-h-screen bg-slate-100 px-4 py-8">
       <div className="mx-auto w-full max-w-6xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-6 md:grid-cols-[72px_1fr]">
-          <aside className="flex flex-col items-center rounded-xl bg-slate-200 py-4">
+          <aside className="flex flex-col items-center rounded-xl bg-slate-200 py-4" suppressHydrationWarning>
             <button
               type="button"
               className="rounded-md bg-white px-2 py-1 text-slate-600 shadow"
@@ -93,23 +92,6 @@ export default function GastosPage() {
 
           <section className="rounded-xl border border-slate-200 p-6">
             <form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
-              {error && (
-                <div
-                  className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-                  role="alert"
-                >
-                  Error
-                </div>
-              )}
-              {successMessage && (
-                <div
-                  className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800"
-                  role="status"
-                >
-                  {successMessage}
-                </div>
-              )}
-
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium text-slate-700" htmlFor="amount">

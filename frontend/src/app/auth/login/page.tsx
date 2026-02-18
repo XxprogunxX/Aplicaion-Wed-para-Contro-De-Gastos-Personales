@@ -12,14 +12,14 @@ import Input from '@/components/ui/Input';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { loading, error, execute } = useApi<AuthResponse>();
+  const { loading, execute } = useApi<AuthResponse>();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Rehabilitar autenticacion real cuando este el backend listo.
     // try {
-    //   const response = await execute(() => api.login(email, password));
+    //   const response = await execute(() => api.login(email, password), { successMessage: '✓ Sesión iniciada correctamente' });
     //   localStorage.setItem('token', response.token);
     //   router.push('/');
     // } catch (err) {
@@ -59,15 +59,6 @@ export default function LoginPage() {
             </div>
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit} onKeyDown={handleKeyDown} noValidate>
-              {error && (
-                <div
-                  className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-                  role="alert"
-                >
-                  {error.message}
-                </div>
-              )}
-
               <Input
                 id="email"
                 name="email"
