@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { sileo } from 'sileo';
 import { api } from '@/lib/api';
 import { ApiError } from '@/types';
 
@@ -15,15 +16,23 @@ export function useApi<T>() {
     error: null,
   });
 
-  const execute = useCallback(async (apiCall: () => Promise<T>): Promise<T> => {
+  const execute = useCallback(async (apiCall: () => Promise<T>, options?: { showSuccess?: boolean; successMessage?: string }): Promise<T> => {
     setState({ data: null, loading: true, error: null });
     try {
       const data = await apiCall();
       setState({ data, loading: false, error: null });
+      
+      if (options?.showSuccess !== false) {
+        sileo.success({ title: options?.successMessage || '¡Operación exitosa!' });
+      }
+      
       return data;
     } catch (error) {
       const apiError = error as ApiError;
       setState({ data: null, loading: false, error: apiError });
+      
+      sileo.error({ title: apiError.message || 'Ocurrió un error' });
+      
       throw apiError; // Re-throw para que el componente pueda manejar si quiere
     }
   }, []);

@@ -21,8 +21,8 @@ export default function Navbar() {
 	};
 
 	return (
-		<header className="bg-slate-200 px-6 py-4 text-slate-700">
-			<div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4">
+		<header className="bg-slate-200 px-6 py-4 text-slate-700" suppressHydrationWarning>
+			<div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
 				<div className="text-sm font-semibold">LOGO</div>
 				<nav className="flex flex-wrap items-center gap-3 text-sm">
 					{navItems.map((item) => {

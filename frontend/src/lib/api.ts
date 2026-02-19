@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
-import { ApiError, AuthResponse, Gasto, Categoria, Presupuesto, ReporteMensual } from '@/types';
+import { ApiError, AuthResponse, Gasto, Categoria, Presupuesto, ReporteMensual, GastoInput } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -80,7 +80,7 @@ class ApiClient {
     return response.data;
   }
 
-  async createGasto(gasto: Omit<Gasto, 'id' | 'createdAt' | 'updatedAt'>): Promise<Gasto> {
+  async createGasto(gasto: GastoInput): Promise<Gasto> {
     const response = await this.client.post('/api/gastos', gasto);
     return response.data;
   }

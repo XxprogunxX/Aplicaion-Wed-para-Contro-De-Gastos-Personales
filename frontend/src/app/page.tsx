@@ -8,7 +8,10 @@ export default function HomePage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (!token || token !== 'token-valido') {
+      if (token && token !== 'token-valido') {
+        localStorage.removeItem('token');
+      }
       router.replace('/auth/login');
     }
   }, [router]);

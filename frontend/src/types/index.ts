@@ -18,6 +18,14 @@ export interface Gasto {
   updatedAt: string;
 }
 
+export interface GastoInput {
+  descripcion: string;
+  monto: number;
+  categoria: string;
+  fecha?: string;
+  metodoPago?: string;
+}
+
 export interface Categoria {
   id: string;
   nombre: string;

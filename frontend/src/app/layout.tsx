@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Courier_Prime, Roboto_Mono, Press_Start_2P } from 'next/font/google'
+import { Toaster } from 'sileo'
 import LayoutShell from '@/components/layout/LayoutShell'
 import './globals.css'
 
@@ -35,6 +36,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${courierPrime.variable} ${robotoMono.variable} ${pressStart2P.variable}`}>
         <LayoutShell>{children}</LayoutShell>
+        <Toaster position="top-right" />
       </body>
     </html>
   )
