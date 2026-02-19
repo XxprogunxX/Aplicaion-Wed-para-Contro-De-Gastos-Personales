@@ -34,8 +34,9 @@ app.get('/health', (req, res) => {
 // Rutas públicas
 // TODO: Agregar rutas de auth aquí
 
-// Rutas protegidas (requieren autenticación)
-app.use('/api/gastos', authMiddleware, gastosRoutes)
+// Rutas protegidas (requieren autenticación) - Comentado para pruebas sin auth
+// app.use('/api/gastos', authMiddleware, gastosRoutes)
+app.use('/api/gastos', gastosRoutes)
 
 // Manejadores finales
 app.use(notFoundHandler)
