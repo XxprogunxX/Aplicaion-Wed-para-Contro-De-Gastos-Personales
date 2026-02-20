@@ -4,6 +4,7 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+require('dotenv').config()
 
 // Middlewares
 const errorHandler = require('./middleware/errorHandler')
@@ -34,17 +35,18 @@ app.get('/health', (req, res) => {
 // Rutas públicas
 // TODO: Agregar rutas de auth aquí
 
-// Rutas protegidas (requieren autenticación) - Comentado para pruebas sin auth
-// app.use('/api/gastos', authMiddleware, gastosRoutes)
-app.use('/api/gastos', gastosRoutes)
+// Rutas protegidas (requieren autenticación)
+app.use('/api/gastos', authMiddleware, gastosRoutes)
 
 // Manejadores finales
 app.use(notFoundHandler)
 app.use(errorHandler)
 
 // Iniciar servidor solo cuando se ejecuta este archivo directamente
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✓ Servidor ejecutándose en puerto ${PORT}`)
-  console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`)
-})
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✓ Servidor ejecutándose en puerto ${PORT}`)
+    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`)
+  })
+}
 module.exports = app
