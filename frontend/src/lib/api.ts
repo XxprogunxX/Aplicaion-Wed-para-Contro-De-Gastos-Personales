@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { ApiError, AuthResponse, Gasto, Categoria, Presupuesto, ReporteMensual, GastoInput } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -23,9 +23,13 @@ class ApiClient {
       return config;
     });
 
-    // Interceptor para manejar errores
+    // Interceptor para manejar respuestas
     this.client.interceptors.response.use(
-      (response: AxiosResponse) => response,
+      (response: AxiosResponse) => {
+        // Para respuestas exitosas, normalizar para retornar solo data
+        response.data = response.data.data;
+        return response;
+      },
       (error: AxiosError) => {
         if (error.response) {
           const apiError: ApiError = {

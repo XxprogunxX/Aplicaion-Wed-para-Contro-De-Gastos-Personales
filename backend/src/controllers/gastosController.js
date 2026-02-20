@@ -63,7 +63,7 @@ async function create(req, res, next) {
     if (!descripcion || !monto || !categoria) {
       return res.status(400).json({
         error: true,
-        message: "Error",
+        message: "Datos incompletos. Se requieren descripción, monto y categoría.",
         status: 400
       })
     }
@@ -80,7 +80,7 @@ async function create(req, res, next) {
 
     res.status(201).json({
       error: false,
-      message: "Exito",
+      message: "Gasto creado correctamente",
       data: nuevoGasto
     })
   } catch (err) {
