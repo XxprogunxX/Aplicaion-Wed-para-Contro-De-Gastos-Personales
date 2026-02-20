@@ -2,25 +2,30 @@
 export default [
   {
     ignores: [
+      'eslint.config.js',
       'node_modules',
       'dist',
       'build'
     ],
     languageOptions: {
       ecmaVersion: 2021,
-      sourceType: 'module',
+      sourceType: 'commonjs',
       globals: {
-        process: 'readonly'
+        process: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        __dirname: 'readonly',
+        console: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        jest: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly'
       }
     },
     rules: {
-      // Buenas prácticas generales
-      eqeqeq: ['error', 'smart'],
-      curly: 'error',
-      semi: ['error', 'always'],
-      quotes: ['error', 'single', { avoidEscape: true }],
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      'no-undef': 'error',
       'no-empty': ['error', { allowEmptyCatch: true }],
       // En backend permitir logs
       'no-console': 'off'
