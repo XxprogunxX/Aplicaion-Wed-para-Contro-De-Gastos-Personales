@@ -13,7 +13,7 @@ const authMiddleware = require('./middleware/auth')
 // Rutas
 const gastosRoutes = require('./routes/routes')
 
-const PORT = process.env.PORT || 3003
+const PORT = process.env.PORT || 3000
 
 // Configuración
 app.use(
@@ -34,19 +34,17 @@ app.get('/health', (req, res) => {
 // Rutas públicas
 // TODO: Agregar rutas de auth aquí
 
-// Rutas protegidas (requieren autenticación)
-app.use('/api/gastos', authMiddleware, gastosRoutes)
+// Rutas protegidas (requieren autenticación) - Comentado para pruebas sin auth
+// app.use('/api/gastos', authMiddleware, gastosRoutes)
+app.use('/api/gastos', gastosRoutes)
 
 // Manejadores finales
 app.use(notFoundHandler)
 app.use(errorHandler)
 
 // Iniciar servidor solo cuando se ejecuta este archivo directamente
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`✓ Servidor ejecutándose en puerto ${PORT}`)
-    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`)
-  })
-}
-
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✓ Servidor ejecutándose en puerto ${PORT}`)
+  console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`)
+})
 module.exports = app

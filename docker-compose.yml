@@ -1,12 +1,12 @@
-version: "3.8"
-
 services:
   backend:
     build:
       context: ./backend
     container_name: backend_app
     ports:
-      - "3000:3000"
+      - "3002:3000"
+    environment:
+      - PORT=3000
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -14,11 +14,11 @@ services:
 
   frontend:
     build:
-      context: ./interfaz
+      context: ./frontend
     container_name: frontend_app
     ports:
-      - "5173:5173"
+      - "3001:3001"
     volumes:
-      - ./interfaz:/app
+      - ./frontend:/app
       - /app/node_modules
     restart: unless-stopped
