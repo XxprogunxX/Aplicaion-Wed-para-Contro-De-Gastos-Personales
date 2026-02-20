@@ -43,11 +43,8 @@ app.use(notFoundHandler)
 app.use(errorHandler)
 
 // Iniciar servidor solo cuando se ejecuta este archivo directamente
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`✓ Servidor ejecutándose en puerto ${PORT}`)
-    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`)
-  })
-}
-
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✓ Servidor ejecutándose en puerto ${PORT}`)
+  console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`)
+})
 module.exports = app
