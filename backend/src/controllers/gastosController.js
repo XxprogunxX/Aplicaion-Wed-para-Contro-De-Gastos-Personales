@@ -5,9 +5,9 @@
 
 // Datos de ejemplo 
 const gastos = [
-  { id: 1, descripcion: "Comida", monto: 50, categoria: "Alimentación" },
-  { id: 2, descripcion: "Transporte", monto: 20, categoria: "Transporte" }
-]
+  { id: 1, descripcion: 'Comida', monto: 50, categoria: 'Alimentación' },
+  { id: 2, descripcion: 'Transporte', monto: 20, categoria: 'Transporte' }
+];
 
 /**
  * Obtener todos los gastos
@@ -16,11 +16,11 @@ async function getAll(req, res, next) {
   try {
     res.json({
       error: false,
-      message: "Gastos obtenidos correctamente",
+      message: 'Gastos obtenidos correctamente',
       data: gastos
-    })
+    });
   } catch (err) {
-    next(err)
+    next(err);
   }
 }
 
@@ -29,26 +29,26 @@ async function getAll(req, res, next) {
  */
 async function getById(req, res, next) {
   try {
-    const { id } = req.params
-    const gasto = gastos.find(g => g.id == id)
+    const id = Number(req.params.id);
+    const gasto = gastos.find(g => g.id === id);
 
     // Si no existe, responder 404
     if (!gasto) {
       return res.status(404).json({
         error: true,
-        message: "Gasto no encontrado",
+        message: 'Gasto no encontrado',
         status: 404
-      })
+      });
     }
 
     res.json({
       error: false,
-      message: "Gasto obtenido correctamente",
+      message: 'Gasto obtenido correctamente',
       data: gasto
-    })
+    });
   } catch (err) {
     // Lanzar error para que lo capture el middleware
-    next(err)
+    next(err);
   }
 }
 
@@ -57,15 +57,15 @@ async function getById(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { descripcion, monto, categoria } = req.body
+    const { descripcion, monto, categoria } = req.body;
 
     // Validar datos
     if (!descripcion || !monto || !categoria) {
       return res.status(400).json({
         error: true,
-        message: "Datos incompletos. Se requieren descripción, monto y categoría.",
+        message: 'Datos incompletos. Se requieren descripción, monto y categoría.',
         status: 400
-      })
+      });
     }
 
     // Crear gasto
@@ -74,17 +74,17 @@ async function create(req, res, next) {
       descripcion,
       monto,
       categoria
-    }
+    };
 
-    gastos.push(nuevoGasto)
+    gastos.push(nuevoGasto);
 
     res.status(201).json({
       error: false,
-      message: "Gasto creado correctamente",
+      message: 'Gasto creado correctamente',
       data: nuevoGasto
-    })
+    });
   } catch (err) {
-    next(err)
+    next(err);
   }
 }
 
@@ -93,31 +93,31 @@ async function create(req, res, next) {
  */
 async function update(req, res, next) {
   try {
-    const { id } = req.params
-    const { descripcion, monto, categoria } = req.body
+    const id = Number(req.params.id);
+    const { descripcion, monto, categoria } = req.body;
 
-    const gasto = gastos.find(g => g.id == id)
+    const gasto = gastos.find(g => g.id === id);
 
     if (!gasto) {
       return res.status(404).json({
         error: true,
-        message: "Gasto no encontrado",
+        message: 'Gasto no encontrado',
         status: 404
-      })
+      });
     }
 
     // Actualizar
-    if (descripcion) gasto.descripcion = descripcion
-    if (monto) gasto.monto = monto
-    if (categoria) gasto.categoria = categoria
+    if (descripcion) {gasto.descripcion = descripcion;}
+    if (monto) {gasto.monto = monto;}
+    if (categoria) {gasto.categoria = categoria;}
 
     res.json({
       error: false,
-      message: "Gasto actualizado correctamente",
+      message: 'Gasto actualizado correctamente',
       data: gasto
-    })
+    });
   } catch (err) {
-    next(err)
+    next(err);
   }
 }
 
@@ -126,26 +126,26 @@ async function update(req, res, next) {
  */
 async function deleteGasto(req, res, next) {
   try {
-    const { id } = req.params
+    const id = Number(req.params.id);
 
-    const index = gastos.findIndex(g => g.id == id)
+    const index = gastos.findIndex(g => g.id === id);
 
     if (index === -1) {
       return res.status(404).json({
         error: true,
-        message: "Gasto no encontrado",
+        message: 'Gasto no encontrado',
         status: 404
-      })
+      });
     }
 
-    gastos.splice(index, 1)
+    gastos.splice(index, 1);
 
     res.json({
       error: false,
-      message: "Gasto eliminado correctamente"
-    })
+      message: 'Gasto eliminado correctamente'
+    });
   } catch (err) {
-    next(err)
+    next(err);
   }
 }
 
@@ -155,4 +155,4 @@ module.exports = {
   create,
   update,
   deleteGasto
-}
+};

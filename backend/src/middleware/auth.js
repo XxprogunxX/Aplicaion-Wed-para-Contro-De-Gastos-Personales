@@ -3,30 +3,30 @@
  * Middleware de autenticación 
  */
 function authMiddleware(req, res, next) {
-  const token = req.headers.authorization
+  const token = req.headers.authorization;
 
   // Sin token
   if (!token) {
     return res.status(401).json({
       error: true,
-      message: "Token requerido",
+      message: 'Token requerido',
       status: 401
-    })
+    });
   }
 
   // Token inválido
-  if (token !== "Bearer token-valido") {
+  if (token !== 'Bearer token-valido') {
     return res.status(401).json({
       error: true,
-      message: "Token inválido",
+      message: 'Token inválido',
       status: 401
-    })
+    });
   }
 
-  next()
+  next();
 }
 
-module.exports = authMiddleware
+module.exports = authMiddleware;
 
 
 // TODO: Implementar validación con JWT real en producción

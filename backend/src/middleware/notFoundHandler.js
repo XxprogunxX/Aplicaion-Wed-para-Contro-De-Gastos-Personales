@@ -5,9 +5,9 @@
 function notFoundHandler(req, res) {
   res.status(404).json({
     error: true,
-    message: "Ruta no encontrada",
+    message: 'Ruta no encontrada',
     status: 404
-  })
+  });
 }
 
-module.exports = notFoundHandler
+module.exports = notFoundHandler;

@@ -19,12 +19,14 @@ jobs:
         node-version: [18.x, 20.x]
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
     
     - name: Install dependencies
       working-directory: ./backend
@@ -32,18 +34,18 @@ jobs:
     
     - name: Run linter
       working-directory: ./backend
-      run: npm run lint || echo "Linter not configured yet"
+      run: npm run lint
     
     - name: Run tests
       working-directory: ./backend
-      run: npm test || echo "Tests not configured yet"
+      run: npm test
 
   build:
     runs-on: ubuntu-latest
     needs: test
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Build Docker image
       working-directory: ./backend

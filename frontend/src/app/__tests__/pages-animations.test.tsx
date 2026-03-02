@@ -1,6 +1,9 @@
-import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
+
+type MockLinkProps = {
+  children: ReactNode;
+  href: string;
+};
 
 // Mock de next/navigation
 jest.mock('next/navigation', () => ({
@@ -12,7 +15,9 @@ jest.mock('next/navigation', () => ({
 
 // Mock de next/link (ya que aparece en login)
 jest.mock('next/link', () => {
-  return ({ children, href }: any) => <a href={href}>{children}</a>;
+  const MockLink = ({ children, href }: MockLinkProps) => <a href={href}>{children}</a>;
+  MockLink.displayName = 'MockLink';
+  return MockLink;
 });
 
 describe('Páginas con Animaciones de Carga', () => {
