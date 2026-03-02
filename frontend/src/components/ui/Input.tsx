@@ -9,15 +9,20 @@ export default function Input({ label, error, className = '', ...props }: InputP
   return (
     <div className="mb-4">
       {label && (
-        <label htmlFor={props.id} className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor={props.id}
+          className="font-inter mb-1 block text-ds-secondary font-medium text-text-secondary"
+        >
           {label}
         </label>
       )}
       <input
-        className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${error ? 'border-red-500' : ''} ${className}`}
+        className={`font-inter w-full rounded-theme-sm border bg-surface px-3 py-2 text-ds-body text-text-primary shadow-card transition-colors placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:bg-background ${error ? 'border-error' : 'border-border'} ${className}`}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="font-inter mt-1 text-ds-secondary text-error">{error}</p>
+      )}
     </div>
   );
 }

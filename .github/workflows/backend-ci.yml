@@ -2,7 +2,7 @@ name: CI Backend
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [ master, develop, 'features/**' ]
     paths:
       - 'backend/**'
   pull_request:
@@ -14,17 +14,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-    
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+    - name: Setup Node.js 20.x
+      uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 20.x
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
     
     - name: Install dependencies
       working-directory: ./backend
@@ -32,18 +30,18 @@ jobs:
     
     - name: Run linter
       working-directory: ./backend
-      run: npm run lint || echo "Linter not configured yet"
+      run: npm run lint
     
     - name: Run tests
       working-directory: ./backend
-      run: npm test || echo "Tests not configured yet"
+      run: npm test
 
   build:
     runs-on: ubuntu-latest
     needs: test
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Build Docker image
       working-directory: ./backend

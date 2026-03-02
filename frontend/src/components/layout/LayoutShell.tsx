@@ -16,7 +16,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   const hideChrome = authPaths.includes(pathname);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {!hideChrome && <Navbar />}
       <main>{children}</main>
       {!hideChrome && <Footer />}

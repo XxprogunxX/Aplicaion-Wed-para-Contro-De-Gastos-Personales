@@ -20,6 +20,10 @@ export function useApi<T>() {
     setState({ data: null, loading: true, error: null });
     try {
       const data = await apiCall();
+      // DESARROLLO: Agregar delay para ver animaciones (elimina esto en producción)
+      if (process.env.NODE_ENV === 'development') {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
       setState({ data, loading: false, error: null });
       
       if (options?.showSuccess !== false) {
