@@ -21,20 +21,20 @@ export default function Navbar() {
 	};
 
 	return (
-		<header className="bg-slate-200 px-6 py-4 text-slate-700" suppressHydrationWarning>
+		<header className="border-b border-border bg-surface px-6 py-4 shadow-card" suppressHydrationWarning>
 			<div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
-				<div className="text-sm font-semibold">LOGO</div>
-				<nav className="flex flex-wrap items-center gap-3 text-sm">
+				<div className="font-inter text-ds-secondary font-semibold text-text-primary">LOGO</div>
+				<nav className="flex flex-wrap items-center gap-2" aria-label="Navegación principal">
 					{navItems.map((item) => {
 						const isActive = pathname === item.href;
 						return (
 							<Link
 								key={item.href}
 								href={item.href}
-								className={`rounded-full px-3 py-1.5 transition ${
+								className={`font-inter rounded-theme-sm px-4 py-2 text-ds-secondary font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
 									isActive
-										? 'bg-slate-300 text-slate-800'
-										: 'text-slate-600 hover:bg-slate-300/70'
+										? 'bg-primary text-white shadow-card'
+										: 'text-text-secondary hover:bg-background hover:text-text-primary'
 								}`}
 							>
 								{item.label}
@@ -45,9 +45,9 @@ export default function Navbar() {
 				<button
 					type="button"
 					onClick={handleLogout}
-					className="rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700"
+					className="font-inter rounded-theme-sm border border-border bg-surface px-4 py-2 text-ds-secondary font-medium text-text-primary transition-colors duration-200 hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
 				>
-					Cerrar sesion
+					Cerrar sesión
 				</button>
 			</div>
 		</header>

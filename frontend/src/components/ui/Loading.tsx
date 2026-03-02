@@ -15,7 +15,7 @@ export default function Loading({ size = 'md', text = 'Cargando...' }: LoadingPr
 	return (
 		<div className="flex items-center gap-3 text-sm text-slate-600">
 			<span
-				className={`animate-spin rounded-full border-slate-300 border-t-slate-600 ${sizeMap[size]}`}
+				className={`motion-safe:animate-spin rounded-full border-slate-300 border-t-slate-600 ${sizeMap[size]}`}
 				role="status"
 				aria-label={text}
 			/>

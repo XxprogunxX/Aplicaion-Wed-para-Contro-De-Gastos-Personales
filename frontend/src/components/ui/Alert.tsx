@@ -7,12 +7,13 @@ interface AlertProps {
 }
 
 export default function Alert({ type, message, onClose }: AlertProps) {
-  const baseClasses = 'p-4 rounded-md mb-4 flex justify-between items-center';
+  const baseClasses =
+    'font-inter p-4 rounded-theme-sm mb-4 flex justify-between items-center border';
   const typeClasses = {
-    error: 'bg-red-50 border border-red-200 text-red-800',
-    success: 'bg-green-50 border border-green-200 text-green-800',
-    warning: 'bg-yellow-50 border border-yellow-200 text-yellow-800',
-    info: 'bg-blue-50 border border-blue-200 text-blue-800',
+    error: 'border-error bg-error/10 text-text-primary',
+    success: 'border-success bg-success/10 text-text-primary',
+    warning: 'border-warning bg-warning/10 text-text-primary',
+    info: 'border-primary bg-primary/10 text-text-primary',
   };
 
   return (
@@ -21,7 +22,7 @@ export default function Alert({ type, message, onClose }: AlertProps) {
       {onClose && (
         <button
           onClick={onClose}
-          className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+          className="ml-4 text-text-secondary hover:text-text-primary focus:outline-none"
           aria-label="Cerrar alerta"
         >
           ×
