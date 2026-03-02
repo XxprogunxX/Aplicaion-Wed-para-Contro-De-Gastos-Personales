@@ -187,3 +187,17 @@ Puedes usar la plantilla disponible en [docs/individual/plantilla_investigacion.
 
 ## Licencia
 Este proyecto es parte de un proyecto académico.
+
+## Despliegue en Vercel (monorepo)
+
+Para evitar `404: NOT_FOUND` en Vercel, este repositorio incluye `vercel.json` en la raíz apuntando al proyecto de `frontend`.
+
+Configura en Vercel:
+
+1. Importa el repositorio completo.
+2. Variables de entorno del frontend:
+   - `NEXT_PUBLIC_API_URL=https://<tu-backend-publico>`
+   - `NEXT_PUBLIC_APP_NAME=Control de Gastos Personales`
+3. Despliega nuevamente.
+
+Si ya tenías el proyecto creado en Vercel, ejecuta **Redeploy** para que tome la nueva configuración.

@@ -4,6 +4,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+require('dotenv').config();
 
 // Middlewares
 const errorHandler = require('./middleware/errorHandler');
@@ -43,7 +44,7 @@ app.use(errorHandler);
 
 // Iniciar servidor solo cuando se ejecuta este archivo directamente
 if (require.main === module) {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`✓ Servidor ejecutándose en puerto ${PORT}`);
     console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
   });

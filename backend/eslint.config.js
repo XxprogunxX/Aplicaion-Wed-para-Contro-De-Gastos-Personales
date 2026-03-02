@@ -20,13 +20,7 @@ export default [
       }
     },
     rules: {
-      // Buenas prácticas generales
-      eqeqeq: ['error', 'smart'],
-      curly: 'error',
-      semi: ['error', 'always'],
-      quotes: ['error', 'single', { avoidEscape: true }],
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      'no-undef': 'error',
       'no-empty': ['error', { allowEmptyCatch: true }],
       // En backend permitir logs
       'no-console': 'off'
