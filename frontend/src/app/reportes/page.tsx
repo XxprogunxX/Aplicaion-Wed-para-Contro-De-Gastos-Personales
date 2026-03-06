@@ -5,7 +5,13 @@ import { api } from '@/lib/api';
 import { ensureBackendToken } from '@/lib/session';
 import Button from '@/components/ui/Button';
 import Loading from '@/components/ui/Loading';
-import { formatCurrency, getCurrentMonth, getCurrentYear, getMonthName } from '@/lib/utils';
+import {
+  formatCurrency,
+  GASTOS_UPDATED_EVENT,
+  getCurrentMonth,
+  getCurrentYear,
+  getMonthName,
+} from '@/lib/utils';
 import type {
   ApiError,
   ReporteAnual,
@@ -64,6 +70,19 @@ export default function ReportesPage() {
 
   useEffect(() => {
     void cargarReportes(mes, anio);
+  }, [anio, cargarReportes, mes]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleGastosUpdated = () => {
+      void cargarReportes(mes, anio);
+    };
+
+    window.addEventListener(GASTOS_UPDATED_EVENT, handleGastosUpdated);
+    return () => window.removeEventListener(GASTOS_UPDATED_EVENT, handleGastosUpdated);
   }, [anio, cargarReportes, mes]);
 
   const variacionPorcentual = reporteComparativo?.variacionPorcentual ?? 0;

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import ChatbotWidget from './ChatbotWidget';
 import { getBackendToken } from '@/lib/session';
 
 interface LayoutShellProps {
@@ -11,6 +12,7 @@ interface LayoutShellProps {
 }
 
 const authPaths = ['/auth/login', '/auth/register'];
+const isChatbotEnabled = process.env.NEXT_PUBLIC_CHATBOT_ENABLED !== 'false';
 
 export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname();
@@ -48,6 +50,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
       {!hideChrome && <Navbar />}
       <main>{children}</main>
       {!hideChrome && <Footer />}
+      {!hideChrome && isChatbotEnabled && <ChatbotWidget />}
     </div>
   );
 }

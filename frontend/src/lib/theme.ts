@@ -57,9 +57,21 @@ type DonutColorRole = 'primary' | 'success' | 'warning';
 /** Map normalized category name -> segment role. */
 export const donutCategoryToRole: Record<string, DonutColorRole> = {
   'gastos financieros': 'primary',
+  alimentacion: 'warning',
+  alimentos: 'warning',
+  comida: 'warning',
   'comida y bebida': 'warning',
   'vida y entretenimiento': 'success',
+  entretenimiento: 'success',
+  servicios: 'success',
+  salud: 'success',
   transporte: 'primary',
+  vivienda: 'primary',
+  educacion: 'warning',
+  ahorro: 'success',
+  deudas: 'warning',
+  suscripciones: 'primary',
+  otros: 'warning',
   videojuegos: 'success',
 };
 

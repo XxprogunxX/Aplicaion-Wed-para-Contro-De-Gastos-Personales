@@ -5,7 +5,11 @@ import { api } from '@/lib/api';
 import { ensureBackendToken } from '@/lib/session';
 import Loading from '@/components/ui/Loading';
 import Button from '@/components/ui/Button';
-import { formatCurrency, formatDateShort } from '@/lib/utils';
+import {
+  formatCurrency,
+  formatDateShort,
+  GASTOS_UPDATED_EVENT,
+} from '@/lib/utils';
 import type { ApiError, Gasto } from '@/types';
 
 function getSortableTimestamp(gasto: Gasto): number {
@@ -52,6 +56,19 @@ export default function HistorialPage() {
 
   useEffect(() => {
     void cargarGastos();
+  }, [cargarGastos]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleGastosUpdated = () => {
+      void cargarGastos();
+    };
+
+    window.addEventListener(GASTOS_UPDATED_EVENT, handleGastosUpdated);
+    return () => window.removeEventListener(GASTOS_UPDATED_EVENT, handleGastosUpdated);
   }, [cargarGastos]);
 
   const categorias = useMemo(() => {

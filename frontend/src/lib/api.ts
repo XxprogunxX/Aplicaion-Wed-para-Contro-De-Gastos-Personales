@@ -1,8 +1,15 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import {
+  emitCategoriasUpdated,
+  emitPresupuestosUpdated,
+  emitGastosUpdated,
+} from '@/lib/utils';
+import {
   ApiError,
   ApiMessageResponse,
   AuthResponse,
+  ChatbotResponse,
+  ChatHistoryMessage,
   Categoria,
   Gasto,
   GastoInput,
@@ -29,6 +36,11 @@ interface ReporteComparativoParams {
   anioActual?: number;
   mesComparar?: number;
   anioComparar?: number;
+}
+
+interface SendChatMessageOptions {
+  pendingActionId?: string;
+  actionDecision?: 'confirm' | 'cancel';
 }
 
 class ApiClient {
@@ -126,16 +138,19 @@ class ApiClient {
 
   async createGasto(gasto: GastoInput): Promise<Gasto> {
     const response = await this.client.post('/api/gastos', gasto);
+    emitGastosUpdated();
     return response.data;
   }
 
   async updateGasto(id: string | number, gasto: Partial<Gasto>): Promise<Gasto> {
     const response = await this.client.put(`/api/gastos/${id}`, gasto);
+    emitGastosUpdated();
     return response.data;
   }
 
   async deleteGasto(id: string | number): Promise<ApiMessageResponse> {
     const response = await this.client.delete(`/api/gastos/${id}`);
+    emitGastosUpdated();
     return response.data;
   }
 
@@ -152,6 +167,22 @@ class ApiClient {
     esGlobal?: boolean;
   }): Promise<Categoria> {
     const response = await this.client.post('/api/categorias', categoria);
+    emitCategoriasUpdated();
+    return response.data;
+  }
+
+  async updateCategoria(
+    id: string | number,
+    categoria: Partial<Pick<Categoria, 'nombre' | 'color' | 'icono'>>
+  ): Promise<Categoria> {
+    const response = await this.client.put(`/api/categorias/${id}`, categoria);
+    emitCategoriasUpdated();
+    return response.data;
+  }
+
+  async deleteCategoria(id: string | number): Promise<ApiMessageResponse> {
+    const response = await this.client.delete(`/api/categorias/${id}`);
+    emitCategoriasUpdated();
     return response.data;
   }
 
@@ -170,11 +201,19 @@ class ApiClient {
     presupuesto: Omit<Presupuesto, 'id' | 'userId' | 'gastado' | 'disponible' | 'porcentajeUsado' | 'excedido'>
   ): Promise<Presupuesto> {
     const response = await this.client.post('/api/presupuestos', presupuesto);
+    emitPresupuestosUpdated();
+    return response.data;
+  }
+
+  async updatePresupuesto(id: string | number, presupuesto: Partial<Presupuesto>): Promise<Presupuesto> {
+    const response = await this.client.put(`/api/presupuestos/${id}`, presupuesto);
+    emitPresupuestosUpdated();
     return response.data;
   }
 
   async deletePresupuesto(id: string | number): Promise<ApiMessageResponse> {
     const response = await this.client.delete(`/api/presupuestos/${id}`);
+    emitPresupuestosUpdated();
     return response.data;
   }
 
@@ -216,6 +255,23 @@ class ApiClient {
       : '/api/reportes/comparativo';
 
     const response = await this.client.get(endpoint);
+    return response.data;
+  }
+
+  // API de Chatbot IA
+  async sendChatMessage(
+    message: string,
+    history: ChatHistoryMessage[] = [],
+    options: SendChatMessageOptions = {}
+  ): Promise<ChatbotResponse> {
+    const payload = {
+      message,
+      history,
+      ...(options.pendingActionId ? { pendingActionId: options.pendingActionId } : {}),
+      ...(options.actionDecision ? { actionDecision: options.actionDecision } : {}),
+    };
+
+    const response = await this.client.post('/api/chat', payload);
     return response.data;
   }
 }

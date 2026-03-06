@@ -18,6 +18,7 @@ const authRoutes = require('./routes/authRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
 const presupuestosRoutes = require('./routes/presupuestosRoutes');
 const reportesRoutes = require('./routes/reportesRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 const PORT = process.env.PORT || 3000;
 
@@ -45,6 +46,7 @@ app.use('/api/gastos', authMiddleware, gastosRoutes);
 app.use('/api/categorias', authMiddleware, categoriasRoutes);
 app.use('/api/presupuestos', authMiddleware, presupuestosRoutes);
 app.use('/api/reportes', authMiddleware, reportesRoutes);
+app.use('/api/chat', authMiddleware, chatRoutes);
 
 // Manejadores finales
 app.use(notFoundHandler);

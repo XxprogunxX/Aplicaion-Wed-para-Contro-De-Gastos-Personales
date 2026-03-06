@@ -7,7 +7,13 @@ import { DonutChartGastos, type DonutChartGastosDato } from '@/components/charts
 import Loading from '@/components/ui/Loading';
 import { api } from '@/lib/api';
 import { ensureBackendToken } from '@/lib/session';
-import { formatCurrency, getCurrentMonth, getCurrentYear, getMonthName } from '@/lib/utils';
+import {
+  formatCurrency,
+  GASTOS_UPDATED_EVENT,
+  getCurrentMonth,
+  getCurrentYear,
+  getMonthName,
+} from '@/lib/utils';
 import type { ApiError, ReporteMensual } from '@/types';
 
 export default function HomePage() {
@@ -38,6 +44,19 @@ export default function HomePage() {
 
   useEffect(() => {
     void cargarResumen();
+  }, [cargarResumen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleGastosUpdated = () => {
+      void cargarResumen();
+    };
+
+    window.addEventListener(GASTOS_UPDATED_EVENT, handleGastosUpdated);
+    return () => window.removeEventListener(GASTOS_UPDATED_EVENT, handleGastosUpdated);
   }, [cargarResumen]);
 
   const handleAddExpenseClick = useCallback(() => {

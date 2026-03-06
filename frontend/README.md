@@ -29,6 +29,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 NEXT_PUBLIC_APP_NAME=Control de Gastos
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_publishable_key
+NEXT_PUBLIC_CHATBOT_ENABLED=true
 ```
 
 Tambien puedes usar `NEXT_PUBLIC_SUPABASE_ANON_KEY` como alternativa al nombre de clave publishable.

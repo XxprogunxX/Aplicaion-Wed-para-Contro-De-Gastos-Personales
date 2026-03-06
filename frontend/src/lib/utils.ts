@@ -6,6 +6,34 @@ export function formatCurrency(amount: number, locale = 'es-MX', currency = 'MXN
 	}).format(amount);
 }
 
+export const GASTOS_UPDATED_EVENT = 'gastos:updated';
+export const PRESUPUESTOS_UPDATED_EVENT = 'presupuestos:updated';
+export const CATEGORIAS_UPDATED_EVENT = 'categorias:updated';
+
+export function emitGastosUpdated() {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	window.dispatchEvent(new Event(GASTOS_UPDATED_EVENT));
+}
+
+export function emitPresupuestosUpdated() {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	window.dispatchEvent(new Event(PRESUPUESTOS_UPDATED_EVENT));
+}
+
+export function emitCategoriasUpdated() {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	window.dispatchEvent(new Event(CATEGORIAS_UPDATED_EVENT));
+}
+
 export function formatDate(date: Date | string) {
 	const value = typeof date === 'string' ? new Date(date) : date;
 	return new Intl.DateTimeFormat('es-MX', {

@@ -122,3 +122,31 @@ export interface ApiError {
   message: string;
   status: number;
 }
+
+export interface ChatHistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatPendingAction {
+  id: string;
+  type: 'create-expense';
+  descripcion: string;
+  monto: number;
+  categoria: string;
+  expiresAt: string;
+}
+
+export interface ChatActionResult {
+  type: 'create-expense';
+  status: 'confirmed' | 'cancelled';
+  gastoId?: string | number;
+}
+
+export interface ChatbotResponse {
+  reply: string;
+  model: string;
+  createdAt: string;
+  pendingAction?: ChatPendingAction | null;
+  actionResult?: ChatActionResult | null;
+}

@@ -32,7 +32,13 @@ NODE_ENV=development
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 SUPABASE_PUBLISHABLE_KEY=your_publishable_or_anon_key
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.1-8b-instant
 ```
+
+El backend usa `Gemini` como proveedor principal del chat. Si Gemini falla por cuota o indisponibilidad temporal y `GROQ_API_KEY` esta configurada, hace failover automatico a Groq sin cambiar el flujo funcional del asistente.
 
 Usa `SUPABASE_SERVICE_ROLE_KEY` en produccion (recomendado). Si no la tienes aun, puedes usar `SUPABASE_PUBLISHABLE_KEY` de forma temporal.
 
@@ -92,6 +98,9 @@ backend/
 ### Reportes
 - `GET /api/reportes/mensual` - Obtener reporte mensual
 - `GET /api/reportes/anual` - Obtener reporte anual
+
+### Chatbot IA
+- `POST /api/chat` - Enviar mensaje al asistente IA (requiere JWT)
 
 ## Docker
 
