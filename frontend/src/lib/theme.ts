@@ -52,18 +52,45 @@ export const chartSegmentColors = {
   neutralHover: theme.colors.text,
 } as const;
 
-/** Map category name → segment role (primary | success | warning). Others use neutral. */
-export const donutCategoryToRole: Record<string, 'primary' | 'success' | 'warning'> = {
-  'Gastos financieros': 'primary',
-  'Comida y Bebida': 'warning',
-  'Vida y entretenimiento': 'success',
+type DonutColorRole = 'primary' | 'success' | 'warning';
+
+/** Map normalized category name -> segment role. */
+export const donutCategoryToRole: Record<string, DonutColorRole> = {
+  'gastos financieros': 'primary',
+  'comida y bebida': 'warning',
+  'vida y entretenimiento': 'success',
+  transporte: 'primary',
+  videojuegos: 'success',
 };
+
+const donutFallbackRoles: DonutColorRole[] = ['primary', 'success', 'warning'];
+
+function normalizeCategoryName(categoryName: string): string {
+  return categoryName
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function getFallbackRole(categoryName: string): DonutColorRole {
+  let hash = 0;
+
+  for (let index = 0; index < categoryName.length; index += 1) {
+    hash = (hash * 31 + categoryName.charCodeAt(index)) >>> 0;
+  }
+
+  return donutFallbackRoles[hash % donutFallbackRoles.length];
+}
 
 export function getDonutSegmentColor(
   categoryName: string,
   hover = false
 ): string {
-  const role = donutCategoryToRole[categoryName] ?? 'neutral';
+  const normalizedCategory = normalizeCategoryName(categoryName || '');
+  const role = normalizedCategory
+    ? (donutCategoryToRole[normalizedCategory] ?? getFallbackRole(normalizedCategory))
+    : 'neutral';
   const key = hover ? `${role}Hover` : role;
   const colors = chartSegmentColors as Record<string, string>;
   return colors[key] ?? (hover ? chartSegmentColors.neutralHover : chartSegmentColors.neutral);

@@ -27,7 +27,11 @@ Crear un archivo `.env.local` en la raíz del frontend:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3000
 NEXT_PUBLIC_APP_NAME=Control de Gastos
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_publishable_key
 ```
+
+Tambien puedes usar `NEXT_PUBLIC_SUPABASE_ANON_KEY` como alternativa al nombre de clave publishable.
 
 ## Ejecutar en desarrollo
 
@@ -62,6 +66,7 @@ frontend/
 │   │   └── layout/        # Componentes de layout
 │   ├── lib/               # Utilidades y funciones
 │   │   ├── api.ts         # Cliente API
+│   │   ├── supabase.ts    # Cliente de Supabase
 │   │   └── utils.ts       # Utilidades generales
 │   ├── types/             # Tipos de TypeScript
 │   └── styles/            # Estilos globales
@@ -95,6 +100,16 @@ El frontend se comunica con el backend a través de la API REST:
 ```typescript
 // Ejemplo de llamada a la API
 const gastos = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/gastos`);
+```
+
+## Integración con Supabase
+
+El cliente de Supabase esta disponible en `src/lib/supabase.ts`.
+
+```typescript
+import { supabase } from '@/lib/supabase';
+
+const { data, error } = await supabase.from('gastos').select('*');
 ```
 
 ## Accesibilidad y manejo de foco

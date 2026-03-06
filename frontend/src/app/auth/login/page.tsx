@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useApi } from '@/hooks/useApi';
 import { AuthResponse } from '@/types';
+import { setBackendToken } from '@/lib/session';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Loading from '@/components/ui/Loading';
@@ -18,17 +20,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Rehabilitar autenticacion real cuando este el backend listo.
-    // try {
-    //   const response = await execute(() => api.login(email, password), { successMessage: '✓ Sesión iniciada correctamente' });
-    //   localStorage.setItem('token', response.token);
-    //   router.push('/');
-    // } catch (err) {
-    //   // Error ya está manejado en el hook
-    // }
-
-    localStorage.setItem('token', 'token-valido');
-    router.push('/');
+    try {
+      const response = await execute(() => api.login(email, password), {
+        successMessage: '✓ Sesión iniciada correctamente',
+      });
+      setBackendToken(response.token);
+      router.push('/');
+    } catch {
+      // Error ya está manejado en el hook
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
@@ -42,10 +42,15 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background px-4 py-10">
       <div className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden rounded-theme-lg border border-border bg-surface shadow-card md:min-h-[540px] md:flex-row">
         <div className="flex min-h-[220px] flex-1 items-center justify-center bg-primary px-10 py-12 text-white">
-          <div className="text-center">
-            <div className="mx-auto mb-6 h-20 w-20 rounded-full border-2 border-white/60 bg-white/10" />
-            <p className="font-inter text-sm uppercase tracking-[0.35em] text-white/70">Logo</p>
-            <h1 className="font-inter mt-3 text-2xl font-semibold">Control de gastos</h1>
+          <div className="w-full max-w-md rounded-theme-md bg-white/95 p-4 text-center shadow-card">
+            <Image
+              src="/images/logo.png"
+              alt="Gastos Personales"
+              width={677}
+              height={369}
+              priority
+              className="mx-auto h-auto w-full max-w-[300px] sm:max-w-[360px]"
+            />
           </div>
         </div>
 

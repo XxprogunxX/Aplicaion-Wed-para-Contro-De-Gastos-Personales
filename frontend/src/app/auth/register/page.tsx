@@ -3,9 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { sileo } from 'sileo';
+import Image from 'next/image';
+import { api } from '@/lib/api';
+import { useApi } from '@/hooks/useApi';
+import type { ApiError, AuthResponse } from '@/types';
+import { setBackendToken } from '@/lib/session';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Loading from '@/components/ui/Loading';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -13,22 +18,33 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [liveMessage, setLiveMessage] = useState('');
+  const { loading, error, execute } = useApi<AuthResponse>();
   const router = useRouter();
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
     if (!name || !email || !password || !confirmPassword) {
-      sileo.warning({ title: 'Por favor completa todos los campos' });
       setLiveMessage('Por favor completa todos los campos');
       return;
     }
+
     if (password !== confirmPassword) {
-      sileo.error({ title: 'Las contraseñas no coinciden' });
       setLiveMessage('Las contraseñas no coinciden');
       return;
     }
-    sileo.success({ title: '✓ Cuenta creada exitosamente' });
-    setLiveMessage('Cuenta creada exitosamente');
+
+    try {
+      const response = await execute(() => api.register(name, email, password), {
+        successMessage: '✓ Cuenta creada exitosamente',
+      });
+      setBackendToken(response.token);
+      setLiveMessage('Cuenta creada exitosamente');
+      router.push('/');
+    } catch (err) {
+      const apiError = err as ApiError;
+      setLiveMessage(apiError.message || 'Ocurrió un error al crear la cuenta');
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
@@ -42,10 +58,15 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-background px-4 py-10">
       <div className="mx-auto flex w-full max-w-5xl flex-col overflow-hidden rounded-theme-lg border border-border bg-surface shadow-card md:min-h-[560px] md:flex-row">
         <div className="flex min-h-[220px] flex-1 items-center justify-center bg-primary px-10 py-12 text-white">
-          <div className="text-center">
-            <div className="mx-auto mb-6 h-20 w-20 rounded-full border-2 border-white/60 bg-white/10" />
-            <p className="font-inter text-sm uppercase tracking-[0.35em] text-white/70">Logo</p>
-            <h1 className="font-inter mt-3 text-2xl font-semibold">Control de gastos</h1>
+          <div className="w-full max-w-md rounded-theme-md bg-white/95 p-4 text-center shadow-card">
+            <Image
+              src="/images/logo.png"
+              alt="Gastos Personales"
+              width={677}
+              height={369}
+              priority
+              className="mx-auto h-auto w-full max-w-[300px] sm:max-w-[360px]"
+            />
           </div>
         </div>
 
@@ -59,9 +80,16 @@ export default function RegisterPage() {
               <p className="font-inter text-ds-secondary text-text-secondary">Registra tus datos</p>
             </div>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit} onKeyDown={handleKeyDown} noValidate>
+              {loading && (
+                <div className="flex justify-center py-4">
+                  <Loading size="md" text="Creando cuenta..." />
+                </div>
+              )}
               <div aria-live="polite" role="status" className="sr-only">
-                {liveMessage}
+                {loading && 'Creando cuenta...'}
+                {!loading && error && (error.message || 'Ocurrió un error al crear la cuenta')}
+                {!loading && !error && liveMessage}
               </div>
               <Input
                 id="name"
@@ -104,8 +132,8 @@ export default function RegisterPage() {
                 onChange={(event) => setConfirmPassword(event.target.value)}
               />
 
-              <Button type="submit" className="w-full rounded-theme-sm">
-                Registrarme
+              <Button type="submit" disabled={loading} className="w-full rounded-theme-sm">
+                {loading ? 'Creando cuenta...' : 'Registrarme'}
               </Button>
 
               <div className="text-center text-ds-secondary">

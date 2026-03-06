@@ -6,6 +6,11 @@
 
 /* -------------------- Design system (theme) -------------------- */
 :root {
+  --font-inter: 'Segoe UI';
+  --font-courier-prime: 'Courier New';
+  --font-roboto-mono: 'Consolas';
+  --font-press-start: 'Courier New';
+
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
@@ -79,12 +84,6 @@ body:has([data-404-page]) header {
 
 body:has([data-404-page]) > div {
   background: transparent !important;
-}
-
-/* Estilos para pixel art */
-@font-face {
-  font-family: 'PixelFont';
-  src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 }
 
 /* Efecto pixelado mejorado */

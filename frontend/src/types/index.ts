@@ -1,21 +1,22 @@
 // Tipos para el modelo de datos
 
 export interface Usuario {
-  id: string;
+  id: string | number;
   username: string;
   email: string;
   createdAt: string;
 }
 
 export interface Gasto {
-  id: string;
-  userId: string;
+  id: string | number;
+  userId?: string | number;
   descripcion: string;
   monto: number;
   categoria: string;
-  fecha: string;
-  createdAt: string;
-  updatedAt: string;
+  fecha?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_at?: string;
 }
 
 export interface GastoInput {
@@ -27,7 +28,7 @@ export interface GastoInput {
 }
 
 export interface Categoria {
-  id: string;
+  id: string | number;
   nombre: string;
   color: string;
   icono: string;
@@ -35,28 +36,75 @@ export interface Categoria {
 }
 
 export interface Presupuesto {
-  id: string;
-  userId: string;
+  id: string | number;
+  userId?: string | number;
   categoria: string;
   monto: number;
-  periodo: 'mensual' | 'anual';
-  mes: number;
+  periodo: 'mensual' | 'anual' | string;
+  mes?: number | null;
   anio: number;
-  gastado: number;
+  gastado?: number;
+  disponible?: number;
+  porcentajeUsado?: number;
+  excedido?: boolean;
 }
 
 export interface ReporteMensual {
   mes: number;
   anio: number;
   totalGastado: number;
+  cantidadGastos?: number;
   gastosPorCategoria: {
     [categoria: string]: number;
   };
   gastos: Gasto[];
 }
 
+export interface ReporteAnual {
+  anio: number;
+  totalGastado: number;
+  cantidadGastos?: number;
+  gastosPorCategoria: {
+    [categoria: string]: number;
+  };
+  gastosPorMes: {
+    [mes: string]: number;
+  };
+}
+
+export interface ReporteCategoriaItem {
+  categoria: string;
+  total: number;
+  cantidad: number;
+  porcentaje: number;
+}
+
+export interface ReportePorCategoria {
+  totalGeneral: number;
+  categorias: ReporteCategoriaItem[];
+}
+
+export interface PeriodoComparativo {
+  mes: number;
+  anio: number;
+  total: number;
+}
+
+export interface ReporteComparativo {
+  periodoActual: PeriodoComparativo;
+  periodoComparado: PeriodoComparativo;
+  variacion: number;
+  variacionPorcentual: number | null;
+}
+
+export interface ApiMessageResponse {
+  error?: boolean;
+  message: string;
+  status?: number;
+}
+
 export interface AuthResponse {
-  success: boolean;
+  success?: boolean;
   token: string;
   user: Usuario;
 }
