@@ -39,43 +39,53 @@ export const theme = {
   },
 } as const;
 
-/** Chart segment colors by role (for donut/pie). Use Primary, Success, Warning. */
 export const chartSegmentColors = {
-  primary: theme.colors.primary,
-  primaryHover: theme.colors.primaryHover,
-  success: theme.colors.success,
-  successHover: theme.colors.successHover,
-  warning: theme.colors.warning,
-  warningHover: theme.colors.warningHover,
-  /** Fallback for unknown categories */
   neutral: theme.colors.textSecondary,
   neutralHover: theme.colors.text,
 } as const;
 
-type DonutColorRole = 'primary' | 'success' | 'warning';
-
-/** Map normalized category name -> segment role. */
-export const donutCategoryToRole: Record<string, DonutColorRole> = {
-  'gastos financieros': 'primary',
-  alimentacion: 'warning',
-  alimentos: 'warning',
-  comida: 'warning',
-  'comida y bebida': 'warning',
-  'vida y entretenimiento': 'success',
-  entretenimiento: 'success',
-  servicios: 'success',
-  salud: 'success',
-  transporte: 'primary',
-  vivienda: 'primary',
-  educacion: 'warning',
-  ahorro: 'success',
-  deudas: 'warning',
-  suscripciones: 'primary',
-  otros: 'warning',
-  videojuegos: 'success',
+type DonutCategoryColor = {
+  color: string;
+  hover: string;
 };
 
-const donutFallbackRoles: DonutColorRole[] = ['primary', 'success', 'warning'];
+/** Unique palette per category to avoid repeated colors in the donut legend. */
+export const donutCategoryColors: Record<string, DonutCategoryColor> = {
+  'gastos financieros': { color: '#4F46E5', hover: '#4338CA' },
+  alimentacion: { color: '#F59E0B', hover: '#D97706' },
+  alimentos: { color: '#F59E0B', hover: '#D97706' },
+  comida: { color: '#F59E0B', hover: '#D97706' },
+  bebidas: { color: '#06B6D4', hover: '#0891B2' },
+  bebida: { color: '#06B6D4', hover: '#0891B2' },
+  'comida y bebida': { color: '#F59E0B', hover: '#D97706' },
+  transporte: { color: '#2563EB', hover: '#1D4ED8' },
+  servicios: { color: '#0D9488', hover: '#0F766E' },
+  salud: { color: '#DC2626', hover: '#B91C1C' },
+  vivienda: { color: '#64748B', hover: '#475569' },
+  entretenimiento: { color: '#DB2777', hover: '#BE185D' },
+  'vida y entretenimiento': { color: '#DB2777', hover: '#BE185D' },
+  videojuegos: { color: '#65A30D', hover: '#4D7C0F' },
+  educacion: { color: '#7C3AED', hover: '#6D28D9' },
+  ahorro: { color: '#16A34A', hover: '#15803D' },
+  deudas: { color: '#EA580C', hover: '#C2410C' },
+  suscripciones: { color: '#0284C7', hover: '#0369A1' },
+  otros: { color: '#94A3B8', hover: '#64748B' },
+};
+
+const donutFallbackPalette: DonutCategoryColor[] = [
+  { color: '#2563EB', hover: '#1D4ED8' },
+  { color: '#16A34A', hover: '#15803D' },
+  { color: '#F59E0B', hover: '#D97706' },
+  { color: '#DC2626', hover: '#B91C1C' },
+  { color: '#4F46E5', hover: '#4338CA' },
+  { color: '#0D9488', hover: '#0F766E' },
+  { color: '#DB2777', hover: '#BE185D' },
+  { color: '#EA580C', hover: '#C2410C' },
+  { color: '#7C3AED', hover: '#6D28D9' },
+  { color: '#0284C7', hover: '#0369A1' },
+  { color: '#65A30D', hover: '#4D7C0F' },
+  { color: '#475569', hover: '#334155' },
+];
 
 function normalizeCategoryName(categoryName: string): string {
   return categoryName
@@ -85,14 +95,14 @@ function normalizeCategoryName(categoryName: string): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-function getFallbackRole(categoryName: string): DonutColorRole {
+function getFallbackColor(categoryName: string): DonutCategoryColor {
   let hash = 0;
 
   for (let index = 0; index < categoryName.length; index += 1) {
     hash = (hash * 31 + categoryName.charCodeAt(index)) >>> 0;
   }
 
-  return donutFallbackRoles[hash % donutFallbackRoles.length];
+  return donutFallbackPalette[hash % donutFallbackPalette.length];
 }
 
 export function getDonutSegmentColor(
@@ -100,12 +110,12 @@ export function getDonutSegmentColor(
   hover = false
 ): string {
   const normalizedCategory = normalizeCategoryName(categoryName || '');
-  const role = normalizedCategory
-    ? (donutCategoryToRole[normalizedCategory] ?? getFallbackRole(normalizedCategory))
-    : 'neutral';
-  const key = hover ? `${role}Hover` : role;
-  const colors = chartSegmentColors as Record<string, string>;
-  return colors[key] ?? (hover ? chartSegmentColors.neutralHover : chartSegmentColors.neutral);
+  if (!normalizedCategory) {
+    return hover ? chartSegmentColors.neutralHover : chartSegmentColors.neutral;
+  }
+
+  const token = donutCategoryColors[normalizedCategory] ?? getFallbackColor(normalizedCategory);
+  return hover ? token.hover : token.color;
 }
 
 export type Theme = typeof theme;

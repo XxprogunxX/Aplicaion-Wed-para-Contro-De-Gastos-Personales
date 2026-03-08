@@ -1,10 +1,49 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { randomUUID } = require('crypto');
+const { createClient } = require('@supabase/supabase-js');
 const { supabase, isSupabaseConfigured } = require('../config/supabase');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
+
+function getPublicSupabaseKey() {
+	return (
+		process.env.SUPABASE_ANON_KEY ||
+		process.env.SUPABASE_PUBLISHABLE_KEY ||
+		process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+		''
+	);
+}
+
+function createUserScopedSupabaseClient(accessToken) {
+	const supabaseUrl = String(process.env.SUPABASE_URL || '').trim();
+	const publicKey = String(getPublicSupabaseKey() || '').trim();
+	const token = String(accessToken || '').trim();
+
+	if (!supabaseUrl || !publicKey || !token) {
+		return null;
+	}
+
+	return createClient(supabaseUrl, publicKey, {
+		auth: {
+			autoRefreshToken: false,
+			persistSession: false,
+		},
+		global: {
+			headers: {
+				Authorization: `Bearer ${token}`,
+			},
+		},
+	});
+}
+
+function isRowLevelSecurityError(error) {
+	const code = String(error?.code || '').trim();
+	const normalizedMessage = String(error?.message || '').toLowerCase();
+
+	return code === '42501' || normalizedMessage.includes('row-level security');
+}
 
 const users = [
 	{
@@ -87,8 +126,17 @@ function isEmailAlreadyRegisteredError(errorMessage) {
 	);
 }
 
-async function ensureUsuarioProfile(user, rawPassword) {
+async function ensureUsuarioProfile(user, rawPassword, options = {}) {
 	if (!isSupabaseConfigured) {
+		return;
+	}
+
+	const hasServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+	const accessToken = String(options.accessToken || '').trim();
+	const scopedClient = createUserScopedSupabaseClient(accessToken);
+
+	// Sin service role ni sesion del usuario no se puede cumplir RLS desde backend.
+	if (!hasServiceRole && !scopedClient) {
 		return;
 	}
 
@@ -101,14 +149,41 @@ async function ensureUsuarioProfile(user, rawPassword) {
 		password: passwordHash,
 	};
 
-	const profileResult = await supabase
-		.from('usuarios')
-		.upsert(profilePayload, { onConflict: 'id' })
-		.select('id')
-		.limit(1)
-		.maybeSingle();
+	async function writeProfile(profileClient, useUpsert) {
+		const profileQuery = useUpsert
+			? profileClient.from('usuarios').upsert(profilePayload, { onConflict: 'id' })
+			: profileClient.from('usuarios').insert(profilePayload);
+
+		return profileQuery.select('id').limit(1).maybeSingle();
+	}
+
+	let profileWriteMode = hasServiceRole ? 'service-role' : 'scoped-user';
+	let profileResult = hasServiceRole
+		? await writeProfile(supabase, true)
+		: await writeProfile(scopedClient, false);
+
+	// Si la supuesta service role no tiene bypass RLS, reintentar como usuario autenticado.
+	if (
+		profileResult.error &&
+		profileWriteMode === 'service-role' &&
+		scopedClient &&
+		isRowLevelSecurityError(profileResult.error)
+	) {
+		profileResult = await writeProfile(scopedClient, false);
+		profileWriteMode = 'scoped-user';
+	}
 
 	if (profileResult.error) {
+		// Si ya existe perfil, no lo tratamos como error.
+		if (profileResult.error.code === '23505') {
+			return;
+		}
+
+		// No bloqueamos auth por politicas RLS del perfil (puede variar entre ambientes).
+		if (isRowLevelSecurityError(profileResult.error)) {
+			return;
+		}
+
 		const profileError = new Error(
 			profileResult.error.message || 'No se pudo sincronizar perfil de usuario'
 		);
@@ -198,7 +273,9 @@ async function register(req, res) {
 			}
 
 			const localUser = upsertLocalUser(toLocalUserFromSupabase(supabaseUser, safeUsername));
-			await ensureUsuarioProfile(localUser, String(password));
+			await ensureUsuarioProfile(localUser, String(password), {
+				accessToken: authResult.data?.session?.access_token,
+			});
 
 			return res.status(201).json({
 				error: false,
@@ -277,7 +354,9 @@ async function login(req, res) {
 				const localUser = upsertLocalUser(
 					toLocalUserFromSupabase(authResult.data.user, normalizedEmail.split('@')[0])
 				);
-				await ensureUsuarioProfile(localUser, String(password));
+				await ensureUsuarioProfile(localUser, String(password), {
+					accessToken: authResult.data?.session?.access_token,
+				});
 
 				return res.json({
 					error: false,

@@ -1,4 +1,5 @@
 const { supabase, isSupabaseConfigured } = require('../config/supabase');
+const { normalizeCategory } = require('../utils/categoryNormalizer');
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 const presupuestos = [
@@ -52,12 +53,44 @@ function getAuthenticatedUserId(req) {
 	return req.user?.id;
 }
 
+function normalizeBudgetCategory(categoria) {
+	return normalizeCategory(categoria, '');
+}
+
+function normalizeBudgetRecord(record) {
+	if (!record || typeof record !== 'object') {
+		return record;
+	}
+
+	return {
+		...record,
+		categoria: normalizeBudgetCategory(record.categoria),
+	};
+}
+
 function resolveDate(value) {
 	if (!value) {
 		return null;
 	}
 
-	const date = new Date(value);
+	const rawDate = String(value).trim();
+	const dateOnlyMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	if (dateOnlyMatch) {
+		const year = Number(dateOnlyMatch[1]);
+		const month = Number(dateOnlyMatch[2]);
+		const day = Number(dateOnlyMatch[3]);
+
+		const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+		if (
+			localDate.getFullYear() === year
+			&& localDate.getMonth() === month - 1
+			&& localDate.getDate() === day
+		) {
+			return localDate;
+		}
+	}
+
+	const date = new Date(rawDate);
 	return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -87,10 +120,12 @@ function isGastoWithinPresupuestoPeriod(gasto, presupuesto) {
 
 function buildEstado(presupuestosData, gastosData) {
 	return (presupuestosData || []).map((presupuesto) => {
+		const categoriaPresupuesto = normalizeBudgetCategory(presupuesto.categoria);
 		const montoPresupuesto = toNumber(presupuesto.monto);
 
 		const gastado = (gastosData || []).reduce((total, gasto) => {
-			if (gasto.categoria !== presupuesto.categoria) {
+			const categoriaGasto = normalizeCategory(gasto.categoria, gasto.descripcion || '');
+			if (categoriaGasto !== categoriaPresupuesto) {
 				return total;
 			}
 
@@ -107,6 +142,7 @@ function buildEstado(presupuestosData, gastosData) {
 
 		return {
 			...presupuesto,
+			categoria: categoriaPresupuesto,
 			gastado,
 			disponible: montoPresupuesto - gastado,
 			porcentajeUsado,
@@ -133,14 +169,16 @@ async function getAll(req, res, next) {
 			return res.json({
 				error: false,
 				message: 'Presupuestos obtenidos correctamente',
-				data: data || [],
+				data: (data || []).map((item) => normalizeBudgetRecord(item)),
 			});
 		}
 
 		res.json({
 			error: false,
 			message: 'Presupuestos obtenidos correctamente',
-			data: presupuestos.filter((item) => String(item.userId) === String(userId)),
+			data: presupuestos
+				.filter((item) => String(item.userId) === String(userId))
+				.map((item) => normalizeBudgetRecord(item)),
 		});
 	} catch (err) {
 		next(err);
@@ -161,7 +199,7 @@ async function create(req, res, next) {
 		}
 
 		const payload = {
-			categoria,
+			categoria: normalizeBudgetCategory(categoria),
 			monto: toNumber(monto),
 			periodo,
 			mes: typeof mes === 'undefined' ? null : Number(mes),
@@ -184,7 +222,7 @@ async function create(req, res, next) {
 			return res.status(201).json({
 				error: false,
 				message: 'Presupuesto creado correctamente',
-				data,
+				data: normalizeBudgetRecord(data),
 			});
 		}
 
@@ -203,7 +241,7 @@ async function create(req, res, next) {
 		res.status(201).json({
 			error: false,
 			message: 'Presupuesto creado correctamente',
-			data: nuevoPresupuesto,
+			data: normalizeBudgetRecord(nuevoPresupuesto),
 		});
 	} catch (err) {
 		next(err);
@@ -219,7 +257,7 @@ async function update(req, res, next) {
 		if (isSupabaseConfigured) {
 			const updates = {};
 			if (typeof categoria !== 'undefined') {
-				updates.categoria = categoria;
+				updates.categoria = normalizeBudgetCategory(categoria);
 			}
 			if (typeof monto !== 'undefined') {
 				updates.monto = toNumber(monto);
@@ -258,7 +296,7 @@ async function update(req, res, next) {
 			return res.json({
 				error: false,
 				message: 'Presupuesto actualizado correctamente',
-				data: presupuestoActualizado,
+				data: normalizeBudgetRecord(presupuestoActualizado),
 			});
 		}
 
@@ -275,7 +313,7 @@ async function update(req, res, next) {
 		}
 
 		if (typeof categoria !== 'undefined') {
-			presupuesto.categoria = categoria;
+			presupuesto.categoria = normalizeBudgetCategory(categoria);
 		}
 		if (typeof monto !== 'undefined') {
 			presupuesto.monto = toNumber(monto);
@@ -293,7 +331,7 @@ async function update(req, res, next) {
 		res.json({
 			error: false,
 			message: 'Presupuesto actualizado correctamente',
-			data: presupuesto,
+			data: normalizeBudgetRecord(presupuesto),
 		});
 	} catch (err) {
 		next(err);

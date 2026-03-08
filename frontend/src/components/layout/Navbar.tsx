@@ -20,6 +20,7 @@ export default function Navbar() {
 	const pathname = usePathname();
 	const router = useRouter();
 	const [profile, setProfile] = useState<Usuario | null>(null);
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -44,6 +45,10 @@ export default function Navbar() {
 		};
 	}, []);
 
+	useEffect(() => {
+		setIsMenuOpen(false);
+	}, [pathname]);
+
 	const handleLogout = async () => {
 		try {
 			await api.logout();
@@ -56,46 +61,101 @@ export default function Navbar() {
 	};
 
 	return (
-		<header className="relative border-b border-border bg-surface px-6 py-4 shadow-card" suppressHydrationWarning>
-			<Link href="/" aria-label="Ir al dashboard" className="absolute left-6 top-1/2 inline-flex -translate-y-1/2 items-center">
-				<Image
-					src="/images/logo.png"
-					alt="Gastos Personales"
-					width={777}
-					height={469}
-					priority
-					className="h-10 w-auto sm:h-12"
-				/>
-			</Link>
-			<div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4" suppressHydrationWarning>
-				<p className="font-inter text-[12px] text-text-secondary" suppressHydrationWarning>
-					{profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
-				</p>
-				<nav className="flex flex-wrap items-center gap-2" aria-label="Navegación principal">
-					{navItems.map((item) => {
-						const isActive = pathname === item.href;
-						return (
-							<Link
-								key={item.href}
-								href={item.href}
-								className={`font-inter rounded-theme-sm px-4 py-2 text-ds-secondary font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-									isActive
-										? 'bg-primary text-white shadow-card'
-										: 'text-text-secondary hover:bg-background hover:text-text-primary'
-								}`}
-							>
-								{item.label}
-							</Link>
-						);
-					})}
-				</nav>
-				<button
-					type="button"
-					onClick={handleLogout}
-					className="font-inter rounded-theme-sm border border-border bg-surface px-4 py-2 text-ds-secondary font-medium text-text-primary transition-colors duration-200 hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+		<header className="border-b border-border bg-surface px-4 py-4 shadow-card sm:px-6" suppressHydrationWarning>
+			<div className="mx-auto w-full max-w-6xl" suppressHydrationWarning>
+				<div className="flex items-center gap-3 lg:gap-6">
+					<Link href="/" aria-label="Ir al dashboard" className="inline-flex shrink-0 items-center">
+						<Image
+							src="/images/logo.png"
+							alt="Gastos Personales"
+							width={777}
+							height={469}
+							priority
+							className="h-9 w-auto sm:h-10 lg:h-11"
+						/>
+					</Link>
+
+					<nav className="hidden flex-1 items-center gap-2 lg:flex" aria-label="Navegación principal">
+						{navItems.map((item) => {
+							const isActive = pathname === item.href;
+							return (
+								<Link
+									key={item.href}
+									href={item.href}
+									className={`font-inter rounded-theme-sm px-4 py-2 text-ds-secondary font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+										isActive
+											? 'bg-primary text-white shadow-card'
+											: 'text-text-secondary hover:bg-background hover:text-text-primary'
+									}`}
+								>
+									{item.label}
+								</Link>
+							);
+						})}
+					</nav>
+
+					<div className="ml-auto hidden items-center gap-4 lg:flex">
+						<p className="font-inter text-[12px] text-text-secondary" suppressHydrationWarning>
+							{profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
+						</p>
+						<button
+							type="button"
+							onClick={handleLogout}
+							className="font-inter rounded-theme-sm border border-border bg-surface px-4 py-2 text-ds-secondary font-medium text-text-primary transition-colors duration-200 hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+						>
+							Cerrar sesión
+						</button>
+					</div>
+
+					<button
+						type="button"
+						onClick={() => setIsMenuOpen((prev) => !prev)}
+						className="font-inter ml-auto inline-flex rounded-theme-sm border border-border bg-surface px-3 py-2 text-sm font-semibold text-text-primary transition-colors duration-200 hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 lg:hidden"
+						aria-expanded={isMenuOpen}
+						aria-controls="navbar-mobile-menu"
+					>
+						{isMenuOpen ? 'Cerrar menu' : 'Menu'}
+					</button>
+				</div>
+
+				<div
+					id="navbar-mobile-menu"
+					className={`overflow-hidden transition-[max-height,opacity,margin] duration-200 ease-out lg:hidden ${
+						isMenuOpen ? 'mt-3 max-h-[30rem] opacity-100' : 'mt-0 max-h-0 opacity-0'
+					}`}
 				>
-					Cerrar sesión
-				</button>
+					<div className="rounded-theme-md border border-border bg-background p-3">
+						<p className="font-inter text-[12px] text-text-secondary" suppressHydrationWarning>
+							{profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
+						</p>
+						<nav className="mt-3 grid grid-cols-2 gap-2" aria-label="Navegación principal móvil">
+							{navItems.map((item) => {
+								const isActive = pathname === item.href;
+								return (
+									<Link
+										key={item.href}
+										href={item.href}
+										onClick={() => setIsMenuOpen(false)}
+										className={`font-inter w-full rounded-theme-sm px-3 py-2 text-center text-ds-secondary font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+											isActive
+												? 'bg-primary text-white shadow-card'
+												: 'text-text-secondary hover:bg-surface hover:text-text-primary'
+										}`}
+									>
+										{item.label}
+									</Link>
+								);
+							})}
+						</nav>
+						<button
+							type="button"
+							onClick={handleLogout}
+							className="font-inter mt-3 w-full rounded-theme-sm border border-border bg-surface px-4 py-2 text-ds-secondary font-medium text-text-primary transition-colors duration-200 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+						>
+							Cerrar sesión
+						</button>
+					</div>
+				</div>
 			</div>
 		</header>
 	);

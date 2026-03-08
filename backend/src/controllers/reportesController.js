@@ -1,4 +1,5 @@
 const { supabase, isSupabaseConfigured } = require('../config/supabase');
+const { normalizeCategory } = require('../utils/categoryNormalizer');
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 const gastosFallback = [
@@ -50,17 +51,45 @@ function resolveDate(gasto) {
 		return null;
 	}
 
-	const date = new Date(rawValue);
+	const rawDate = String(rawValue).trim();
+	const dateOnlyMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	if (dateOnlyMatch) {
+		const year = Number(dateOnlyMatch[1]);
+		const month = Number(dateOnlyMatch[2]);
+		const day = Number(dateOnlyMatch[3]);
+
+		const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+		if (
+			localDate.getFullYear() === year
+			&& localDate.getMonth() === month - 1
+			&& localDate.getDate() === day
+		) {
+			return localDate;
+		}
+	}
+
+	const date = new Date(rawDate);
 	return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function normalizeCategoria(value) {
-	return value || 'Sin categoria';
+function normalizeCategoria(value, contextText = '') {
+	return normalizeCategory(value, contextText);
+}
+
+function normalizeGastoRecord(gasto) {
+	if (!gasto || typeof gasto !== 'object') {
+		return gasto;
+	}
+
+	return {
+		...gasto,
+		categoria: normalizeCategoria(gasto.categoria, gasto.descripcion || ''),
+	};
 }
 
 function aggregateByCategoria(gastos) {
 	return gastos.reduce((acc, gasto) => {
-		const categoria = normalizeCategoria(gasto.categoria);
+		const categoria = normalizeCategoria(gasto.categoria, gasto.descripcion || '');
 		acc[categoria] = (acc[categoria] || 0) + toNumber(gasto.monto);
 		return acc;
 	}, {});
@@ -168,7 +197,7 @@ async function getMensual(req, res, next) {
 				totalGastado,
 				cantidadGastos: gastosMensuales.length,
 				gastosPorCategoria,
-				gastos: gastosMensuales,
+				gastos: gastosMensuales.map((item) => normalizeGastoRecord(item)),
 			},
 		});
 	} catch (err) {
@@ -221,7 +250,7 @@ async function getPorCategoria(req, res, next) {
 		const data = Object.entries(grouped)
 			.map(([categoria, total]) => {
 				const cantidad = gastosData.filter(
-					(gasto) => normalizeCategoria(gasto.categoria) === categoria
+					(gasto) => normalizeCategoria(gasto.categoria, gasto.descripcion || '') === categoria
 				).length;
 
 				return {

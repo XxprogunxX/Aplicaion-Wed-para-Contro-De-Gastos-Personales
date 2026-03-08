@@ -134,13 +134,15 @@ export interface ChatPendingAction {
   descripcion: string;
   monto: number;
   categoria: string;
+  fecha?: string;
   expiresAt: string;
 }
 
 export interface ChatActionResult {
-  type: 'create-expense';
+  type: 'create-expense' | 'create-budget';
   status: 'confirmed' | 'cancelled';
   gastoId?: string | number;
+  presupuestoId?: string | number;
 }
 
 export interface ChatbotResponse {

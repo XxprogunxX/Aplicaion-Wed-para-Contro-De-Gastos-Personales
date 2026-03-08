@@ -1,9 +1,9 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
-import { emitGastosUpdated } from '@/lib/utils';
+import { emitGastosUpdated, emitPresupuestosUpdated } from '@/lib/utils';
 import type { ApiError, ChatHistoryMessage, ChatPendingAction } from '@/types';
 
 type WidgetMessage = ChatHistoryMessage & {
@@ -15,6 +15,23 @@ const MAX_HISTORY_MESSAGES = 8;
 
 function buildId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function formatPendingDate(value?: string): string {
+  if (!value) {
+    return '';
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '';
+  }
+
+  return parsedDate.toLocaleDateString('es-MX', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
 }
 
 const INITIAL_MESSAGES: WidgetMessage[] = [
@@ -35,8 +52,21 @@ export default function ChatbotWidget() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<ChatPendingAction | null>(null);
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
+
+  function resizeInput(target?: HTMLTextAreaElement | null) {
+    const textarea = target || inputRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    const maxHeight = 144;
+    textarea.style.height = 'auto';
+    const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${Math.max(nextHeight, 44)}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }
 
   const historyForApi = useMemo<ChatHistoryMessage[]>(() => {
     return messages
@@ -51,8 +81,15 @@ export default function ChatbotWidget() {
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus();
+      resizeInput();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!inputValue) {
+      resizeInput();
+    }
+  }, [inputValue]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -69,6 +106,7 @@ export default function ChatbotWidget() {
     reply: string;
     pendingAction?: ChatPendingAction | null;
     actionResult?: {
+      type: 'create-expense' | 'create-budget';
       status: 'confirmed' | 'cancelled';
     } | null;
   }) {
@@ -91,7 +129,13 @@ export default function ChatbotWidget() {
 
     if (response.actionResult?.status === 'confirmed') {
       setPendingAction(null);
-      emitGastosUpdated();
+
+      if (response.actionResult.type === 'create-budget') {
+        emitPresupuestosUpdated();
+      } else {
+        emitGastosUpdated();
+      }
+
       return;
     }
 
@@ -138,6 +182,24 @@ export default function ChatbotWidget() {
     } finally {
       setIsSending(false);
     }
+  }
+
+  function handleInputChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    setInputValue(event.target.value);
+    resizeInput(event.target);
+  }
+
+  function handleInputKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== 'Enter' || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    if (!inputValue.trim() || isSending) {
+      return;
+    }
+
+    event.currentTarget.form?.requestSubmit();
   }
 
   async function handlePendingActionDecision(decision: 'confirm' | 'cancel') {
@@ -190,7 +252,7 @@ export default function ChatbotWidget() {
           <header className="flex items-center justify-between border-b border-border bg-background px-4 py-3">
             <div>
               <p className="font-inter text-ds-secondary font-semibold text-text-primary">Asistente IA</p>
-              <p className="font-inter text-xs text-text-secondary">Gemini para finanzas personales</p>
+              <p className="font-inter text-xs text-text-secondary">Asistente IA para finanzas personales</p>
             </div>
             <button
               type="button"
@@ -212,7 +274,7 @@ export default function ChatbotWidget() {
                     isUser
                       ? 'ml-auto bg-primary text-white'
                       : 'mr-auto border border-border bg-background text-text-primary'
-                  } ${message.pending ? 'italic opacity-90' : ''}`}
+                  } ${message.pending ? 'italic opacity-90' : ''} whitespace-pre-wrap break-words`}
                 >
                   {message.content}
                 </article>
@@ -234,6 +296,9 @@ export default function ChatbotWidget() {
                 <p>
                   {pendingAction.descripcion} - ${pendingAction.monto.toFixed(2)} ({pendingAction.categoria})
                 </p>
+                {formatPendingDate(pendingAction.fecha) ? (
+                  <p>Fecha detectada: {formatPendingDate(pendingAction.fecha)}</p>
+                ) : null}
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
@@ -255,24 +320,28 @@ export default function ChatbotWidget() {
               </div>
             ) : null}
 
-            <form onSubmit={handleSubmit} className="flex items-center gap-2">
+            <form onSubmit={handleSubmit} className="flex items-end gap-2">
               <label htmlFor="chatbot-input" className="sr-only">
                 Escribe un mensaje para el asistente
               </label>
-              <input
+              <textarea
                 ref={inputRef}
                 id="chatbot-input"
-                type="text"
+                rows={1}
                 value={inputValue}
-                onChange={(event) => setInputValue(event.target.value)}
-                placeholder="Ejemplo: Como reduzco gastos hormiga?"
-                className="font-inter w-full rounded-theme-sm border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-2 focus:ring-primary/20"
+                onChange={handleInputChange}
+                onKeyDown={handleInputKeyDown}
+                placeholder="Escribe tu mensaje..."
+                className="font-inter min-h-[2.75rem] w-full resize-none rounded-theme-sm border border-border bg-surface px-3 py-2 text-[15px] leading-6 text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-2 focus:ring-primary/20"
                 disabled={isSending}
                 maxLength={1200}
+                spellCheck={false}
+                autoCorrect="off"
+                autoComplete="off"
               />
               <button
                 type="submit"
-                className="rounded-theme-sm bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-theme-sm bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!inputValue.trim() || isSending}
               >
                 Enviar
