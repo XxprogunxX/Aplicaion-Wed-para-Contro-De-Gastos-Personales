@@ -6,7 +6,6 @@ import {
   Pie,
   Cell,
   Sector,
-  Legend,
   ResponsiveContainer,
   Tooltip,
 } from 'recharts';
@@ -28,34 +27,68 @@ function formatMxn(value: number): string {
 }
 
 /** Scale font size so two-line label stays within innerRadius (avoid overflow) */
-function scaledFontSize(innerRadiusPx: number, ratio: number): number {
-  const max = innerRadiusPx * ratio;
-  return Math.min(Math.floor(max), 24);
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function scaledFontSize(
+  innerRadiusPx: number,
+  ratio: number,
+  minSize: number,
+  maxSize: number,
+  textLength = 0,
+  textThreshold = 12
+): number {
+  const base = innerRadiusPx * ratio;
+  const overflowChars = Math.max(0, textLength - textThreshold);
+  const adjusted = base - overflowChars * 0.45;
+  return clampNumber(Math.round(adjusted), minSize, maxSize);
 }
 
 interface DonutChartGastosProps {
   data: DonutChartGastosDato[];
 }
 
+function truncateLegendLabel(value: string, max = 14): string {
+  if (value.length <= max) {
+    return value;
+  }
+
+  return `${value.slice(0, max)}…`;
+}
+
 export function DonutChartGastos({ data }: DonutChartGastosProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const total = useMemo(
-    () => data.reduce((sum, item) => sum + item.value, 0),
+  const sortedData = useMemo(
+    () =>
+      [...data]
+        .map((item) => ({
+          ...item,
+          value: Number(item.value) || 0,
+        }))
+        .sort((a, b) => b.value - a.value),
     [data]
+  );
+
+  const total = useMemo(
+    () => sortedData.reduce((sum, item) => sum + item.value, 0),
+    [sortedData]
   );
 
   const dataWithColor = useMemo(
     () =>
-      data.map((item) => ({
+      sortedData.map((item) => ({
         ...item,
         color: getDonutSegmentColor(item.name, false),
         colorHover: getDonutSegmentColor(item.name, true),
       })),
-    [data]
+    [sortedData]
   );
 
-  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const [selectedIndex, setSelectedIndex] = useState<number | undefined>(undefined);
+  const [hoveredIndex, setHoveredIndex] = useState<number | undefined>(undefined);
+  const activeIndex = hoveredIndex ?? selectedIndex;
 
   const renderCenterLabel = useCallback(
     (props: {
@@ -67,16 +100,23 @@ export function DonutChartGastos({ data }: DonutChartGastosProps) {
       const { cx, cy, index = 0 } = props;
       if (index !== 0) return null;
 
+      const selectedSlice =
+        typeof activeIndex === 'number' ? dataWithColor[activeIndex] : undefined;
+      const selectedLabel = selectedSlice?.name || 'Todos';
+      const selectedValue = Number(selectedSlice?.value ?? total);
+      const labelDisplay =
+        selectedLabel.length > 16 ? `${selectedLabel.slice(0, 16)}…` : selectedLabel;
+
       const rawInner = props.innerRadius;
       const innerPx =
         typeof rawInner === 'number' ? rawInner : 80;
-      const fontSizeLabel = scaledFontSize(innerPx, 0.2);
-      const fontSizeValue = scaledFontSize(innerPx, 0.28);
-      const lineGap = fontSizeValue * 0.4;
-      const totalFormatted = `MXN ${total.toLocaleString('es-MX')}`;
+      const valueFormatted = formatMxn(selectedValue);
+      const fontSizeLabel = scaledFontSize(innerPx, 0.24, 10, 18, selectedLabel.length, 10);
+      const fontSizeValue = scaledFontSize(innerPx, 0.36, 13, 30, valueFormatted.length, 11);
+      const lineGap = Math.max(4, fontSizeValue * 0.38);
 
       return (
-        <g role="img" aria-label={`Todos. ${totalFormatted}`}>
+        <g role="img" aria-label={`${selectedLabel}. ${valueFormatted}`}>
           <text
             x={cx}
             y={cy}
@@ -88,7 +128,7 @@ export function DonutChartGastos({ data }: DonutChartGastosProps) {
             fontFamily="var(--font-inter), ui-sans-serif, sans-serif"
             fontWeight={400}
           >
-            Todos
+            {labelDisplay}
           </text>
           <text
             x={cx}
@@ -101,12 +141,12 @@ export function DonutChartGastos({ data }: DonutChartGastosProps) {
             fontFamily="var(--font-inter), ui-sans-serif, sans-serif"
             fontWeight={600}
           >
-            {totalFormatted}
+            {valueFormatted}
           </text>
         </g>
       );
     },
-    [total]
+    [activeIndex, dataWithColor, total]
   );
 
   const renderActiveShape = useCallback(
@@ -122,7 +162,10 @@ export function DonutChartGastos({ data }: DonutChartGastosProps) {
 
   if (data.length === 0) {
     return (
-      <div className="flex min-h-[280px] w-full items-center justify-center rounded-theme-lg border border-border bg-background">
+      <div
+        className="flex w-full items-center justify-center rounded-theme-lg border border-border bg-background"
+        style={{ minHeight: 'clamp(15.5rem, 55vw, 25rem)' }}
+      >
         <p className="font-inter text-ds-secondary text-text-secondary">
           No hay datos para mostrar
         </p>
@@ -143,9 +186,12 @@ export function DonutChartGastos({ data }: DonutChartGastosProps) {
 
       <div
         className="relative w-full rounded-theme-lg"
-        style={{ minHeight: 280, backgroundColor: theme.colors.background }}
+        style={{
+          backgroundColor: theme.colors.background,
+          height: 'clamp(15.5rem, 55vw, 25rem)',
+        }}
       >
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <Pie
               data={dataWithColor}
@@ -165,45 +211,117 @@ export function DonutChartGastos({ data }: DonutChartGastosProps) {
               onMouseEnter={
                 prefersReducedMotion
                   ? undefined
-                  : (_, index) => setActiveIndex(index)
+                  : (_, index) => setHoveredIndex(index)
               }
               onMouseLeave={
                 prefersReducedMotion
                   ? undefined
-                  : () => setActiveIndex(undefined)
+                  : () => setHoveredIndex(undefined)
               }
+              onClick={(_, index) => {
+                setSelectedIndex((current) => (current === index ? undefined : index));
+              }}
             >
               {dataWithColor.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [formatMxn(value), '']}
-              contentStyle={{
-                backgroundColor: theme.colors.surface,
-                border: `1px solid ${theme.colors.border}`,
-                borderRadius: 8,
-                fontFamily: 'var(--font-inter), sans-serif',
-                fontSize: 14,
-                color: theme.colors.text,
+              cursor={false}
+              content={({ active, payload }: {
+                active?: boolean;
+                payload?: Array<{
+                  name?: string;
+                  value?: number;
+                  payload?: {
+                    name?: string;
+                    value?: number;
+                  };
+                }>;
+              }) => {
+                if (!active || !payload || payload.length === 0) {
+                  return null;
+                }
+
+                const firstEntry = payload[0];
+                const category = String(firstEntry?.payload?.name || firstEntry?.name || 'Categoría');
+                const amount = Number(firstEntry?.value ?? firstEntry?.payload?.value ?? 0);
+                const percentage = total > 0 ? ((amount / total) * 100).toFixed(1) : '0.0';
+
+                return (
+                  <div
+                    style={{
+                      backgroundColor: theme.colors.surface,
+                      border: `1px solid ${theme.colors.border}`,
+                      borderRadius: 8,
+                      fontFamily: 'var(--font-inter), sans-serif',
+                      fontSize: 14,
+                      color: theme.colors.text,
+                      padding: '8px 10px',
+                    }}
+                  >
+                    <p style={{ margin: 0, fontWeight: 600 }}>{category}</p>
+                    <p style={{ margin: '2px 0 0 0', fontWeight: 500 }}>{formatMxn(amount)}</p>
+                    <p style={{ margin: '2px 0 0 0', color: theme.colors.textSecondary, fontSize: 12 }}>
+                      {percentage}% del total
+                    </p>
+                  </div>
+                );
               }}
-              labelStyle={{ color: theme.colors.text, fontWeight: 600 }}
-            />
-            <Legend
-              layout="horizontal"
-              verticalAlign="bottom"
-              align="center"
-              wrapperStyle={{ paddingTop: 16 }}
-              iconType="circle"
-              iconSize={10}
-              formatter={(value) => (
-                <span className="font-inter text-ds-secondary text-text-primary">
-                  {value}
-                </span>
-              )}
             />
           </PieChart>
         </ResponsiveContainer>
+      </div>
+
+      <div className="mt-4 px-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-3 sm:gap-y-2">
+          {dataWithColor.map((entry, index) => {
+            const rawName = String(entry.name || 'Categoría');
+            const displayName = truncateLegendLabel(rawName);
+            const dotColor = entry.color || getDonutSegmentColor(rawName, false);
+            const isActive = activeIndex === index;
+            const amount = Number(entry.value || 0);
+            const percentage = total > 0 ? ((amount / total) * 100).toFixed(1) : '0.0';
+
+            return (
+              <button
+                key={`legend-${rawName}-${index}`}
+                type="button"
+                onClick={() => {
+                  setSelectedIndex((current) => (current === index ? undefined : index));
+                }}
+                className={`inline-flex w-full items-center gap-1.5 rounded-theme-sm px-1 py-0.5 text-left transition-colors ${
+                  isActive
+                    ? 'font-semibold text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+                aria-label={`Seleccionar categoría ${rawName}`}
+                title={rawName}
+              >
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: dotColor }}
+                  aria-hidden="true"
+                />
+                <span className="font-inter min-w-0 max-w-[8.5rem] truncate text-xs sm:max-w-[10rem] sm:text-ds-secondary">
+                  {displayName}
+                </span>
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-theme-sm border border-border bg-background px-1.5 py-0.5 font-inter text-[10px] leading-none text-text-secondary sm:text-[11px]">
+                  <span>{percentage}%</span>
+                  <span className="hidden sm:inline">·</span>
+                  <span className="hidden sm:inline">{formatMxn(amount)}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {typeof selectedIndex === 'number' && dataWithColor[selectedIndex] ? (
+          <p className="font-inter mt-2 text-center text-xs text-text-secondary">
+            Categoría seleccionada:{' '}
+            <span className="font-medium text-text-primary">{dataWithColor[selectedIndex].name}</span>
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -133,7 +133,10 @@ export default function HomePage() {
             ) : null}
 
             {!loading && !errorMessage ? (
-              <div className="mx-auto max-w-md motion-safe:animate-chart-in">
+              <div
+                className="mx-auto w-full motion-safe:animate-chart-in"
+                style={{ maxWidth: 'clamp(20rem, 92vw, 46rem)' }}
+              >
                 <DonutChartGastos data={dataChart} />
               </div>
             ) : null}
