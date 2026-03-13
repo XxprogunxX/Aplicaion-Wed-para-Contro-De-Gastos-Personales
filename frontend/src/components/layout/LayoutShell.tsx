@@ -48,7 +48,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   return (
     <div className="min-h-screen bg-background">
       {!hideChrome && <Navbar />}
-      <main>{children}</main>
+      <main className={hideChrome ? '' : 'pb-24 sm:pb-0'}>{children}</main>
       {!hideChrome && <Footer />}
       {!hideChrome && isChatbotEnabled && <ChatbotWidget />}
     </div>

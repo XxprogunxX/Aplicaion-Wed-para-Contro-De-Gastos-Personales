@@ -109,9 +109,9 @@ export default function ReportesPage() {
   }, [gastosPorMes]);
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mx-auto w-full max-w-6xl rounded-theme-lg border border-border bg-surface p-6 shadow-card sm:p-8">
-        <section className="rounded-theme-md border border-border bg-surface p-6">
+    <div className="min-h-screen bg-background px-3 pt-6 sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-6xl rounded-theme-lg border border-border bg-surface p-4 shadow-card sm:p-8">
+        <section className="rounded-theme-md border border-border bg-surface p-4 sm:p-6">
           <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="font-inter text-ds-h2 font-semibold text-text-primary">Reportes</h1>
@@ -120,11 +120,11 @@ export default function ReportesPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <select
                 value={mes}
                 onChange={(event) => setMes(Number(event.target.value))}
-                className="font-inter rounded-theme-sm border border-border bg-background px-3 py-2 text-ds-secondary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                className="font-inter w-full rounded-theme-sm border border-border bg-background px-3 py-2 text-ds-secondary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary sm:w-auto"
                 aria-label="Selecciona mes"
               >
                 {monthOptions.map((item) => (
@@ -139,11 +139,16 @@ export default function ReportesPage() {
                 min={2000}
                 value={anio}
                 onChange={(event) => setAnio(Number(event.target.value))}
-                className="font-inter w-28 rounded-theme-sm border border-border bg-background px-3 py-2 text-ds-secondary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                className="font-inter w-full rounded-theme-sm border border-border bg-background px-3 py-2 text-ds-secondary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary sm:w-28"
                 aria-label="Selecciona año"
               />
 
-              <Button type="button" variant="secondary" onClick={() => void cargarReportes(mes, anio)}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void cargarReportes(mes, anio)}
+                className="w-full sm:w-auto"
+              >
                 Actualizar
               </Button>
             </div>
@@ -197,30 +202,51 @@ export default function ReportesPage() {
                   {!reporteCategorias || reporteCategorias.categorias.length === 0 ? (
                     <p className="font-inter mt-4 text-ds-secondary text-text-secondary">No hay datos por categoría.</p>
                   ) : (
-                    <div className="mt-4 overflow-x-auto">
-                      <table className="min-w-full divide-y divide-border">
-                        <thead>
-                          <tr>
-                            <th className="font-inter px-3 py-2 text-left text-ds-secondary text-text-secondary">Categoría</th>
-                            <th className="font-inter px-3 py-2 text-right text-ds-secondary text-text-secondary">Total</th>
-                            <th className="font-inter px-3 py-2 text-right text-ds-secondary text-text-secondary">% del total</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {reporteCategorias.categorias.map((item) => (
-                            <tr key={item.categoria}>
-                              <td className="font-inter px-3 py-2 text-ds-body text-text-primary">{item.categoria}</td>
-                              <td className="font-inter px-3 py-2 text-right text-ds-body text-text-primary">
-                                {formatCurrency(item.total)}
-                              </td>
-                              <td className="font-inter px-3 py-2 text-right text-ds-body text-text-secondary">
-                                {item.porcentaje.toFixed(2)}%
-                              </td>
+                    <>
+                      <div className="mt-4 space-y-3 sm:hidden">
+                        {reporteCategorias.categorias.map((item) => (
+                          <article
+                            key={`mobile-${item.categoria}`}
+                            className="rounded-theme-sm border border-border bg-surface p-3"
+                          >
+                            <p className="font-inter text-ds-body font-semibold text-text-primary break-words">
+                              {item.categoria}
+                            </p>
+                            <p className="font-inter mt-1 text-ds-secondary text-text-secondary">
+                              {item.porcentaje.toFixed(2)}% del total
+                            </p>
+                            <p className="font-inter mt-2 text-ds-body font-semibold text-text-primary">
+                              {formatCurrency(item.total)}
+                            </p>
+                          </article>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 hidden overflow-x-auto sm:block">
+                        <table className="min-w-full divide-y divide-border">
+                          <thead>
+                            <tr>
+                              <th className="font-inter px-3 py-2 text-left text-ds-secondary text-text-secondary">Categoría</th>
+                              <th className="font-inter px-3 py-2 text-right text-ds-secondary text-text-secondary">Total</th>
+                              <th className="font-inter px-3 py-2 text-right text-ds-secondary text-text-secondary">% del total</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {reporteCategorias.categorias.map((item) => (
+                              <tr key={item.categoria}>
+                                <td className="font-inter px-3 py-2 text-ds-body text-text-primary">{item.categoria}</td>
+                                <td className="font-inter px-3 py-2 text-right text-ds-body text-text-primary">
+                                  {formatCurrency(item.total)}
+                                </td>
+                                <td className="font-inter px-3 py-2 text-right text-ds-body text-text-secondary">
+                                  {item.porcentaje.toFixed(2)}%
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
                   )}
                 </section>
 

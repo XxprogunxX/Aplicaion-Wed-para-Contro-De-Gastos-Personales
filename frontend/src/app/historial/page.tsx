@@ -109,9 +109,9 @@ export default function HistorialPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mx-auto w-full max-w-6xl rounded-theme-lg border border-border bg-surface p-6 shadow-card sm:p-8">
-        <section className="rounded-theme-md border border-border bg-surface p-6">
+    <div className="min-h-screen bg-background px-3 pt-6 sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-6xl rounded-theme-lg border border-border bg-surface p-4 shadow-card sm:p-8">
+        <section className="rounded-theme-md border border-border bg-surface p-4 sm:p-6">
           <header className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="font-inter text-ds-h2 font-semibold text-text-primary">Historial de gastos</h1>
@@ -120,11 +120,11 @@ export default function HistorialPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               <select
                 value={categoriaFiltro}
                 onChange={(event) => setCategoriaFiltro(event.target.value)}
-                className="font-inter rounded-theme-sm border border-border bg-background px-3 py-2 text-ds-secondary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                className="font-inter w-full rounded-theme-sm border border-border bg-background px-3 py-2 text-ds-secondary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary sm:w-auto"
                 aria-label="Filtrar por categoría"
               >
                 {categorias.map((categoria) => (
@@ -133,7 +133,12 @@ export default function HistorialPage() {
                   </option>
                 ))}
               </select>
-              <Button type="button" variant="secondary" onClick={() => void cargarGastos()}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void cargarGastos()}
+                className="w-full sm:w-auto"
+              >
                 Actualizar
               </Button>
             </div>
@@ -159,40 +164,77 @@ export default function HistorialPage() {
             ) : null}
 
             {!loading && !errorMessage && gastosFiltrados.length > 0 ? (
-              <div className="overflow-x-auto rounded-theme-md border border-border">
-                <table className="min-w-full divide-y divide-border">
-                  <thead className="bg-background">
-                    <tr>
-                      <th className="font-inter px-4 py-3 text-left text-ds-secondary font-semibold text-text-secondary">Descripción</th>
-                      <th className="font-inter px-4 py-3 text-left text-ds-secondary font-semibold text-text-secondary">Categoría</th>
-                      <th className="font-inter px-4 py-3 text-left text-ds-secondary font-semibold text-text-secondary">Fecha</th>
-                      <th className="font-inter px-4 py-3 text-right text-ds-secondary font-semibold text-text-secondary">Monto</th>
-                      <th className="font-inter px-4 py-3 text-right text-ds-secondary font-semibold text-text-secondary">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border bg-surface">
-                    {gastosFiltrados.map((gasto) => (
-                      <tr key={String(gasto.id)}>
-                        <td className="font-inter px-4 py-3 text-ds-body text-text-primary">{gasto.descripcion}</td>
-                        <td className="font-inter px-4 py-3 text-ds-body text-text-secondary">{gasto.categoria}</td>
-                        <td className="font-inter px-4 py-3 text-ds-body text-text-secondary">{getDisplayDate(gasto)}</td>
-                        <td className="font-inter px-4 py-3 text-right text-ds-body font-semibold text-text-primary">
+              <>
+                <div className="space-y-3 sm:hidden">
+                  {gastosFiltrados.map((gasto) => (
+                    <article
+                      key={`mobile-${String(gasto.id)}`}
+                      className="rounded-theme-md border border-border bg-background p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-inter text-ds-body font-semibold text-text-primary break-words">
+                            {gasto.descripcion}
+                          </p>
+                          <p className="font-inter mt-1 text-ds-secondary text-text-secondary break-words">
+                            {gasto.categoria || 'Sin categoría'}
+                          </p>
+                          <p className="font-inter mt-1 text-ds-secondary text-text-secondary">
+                            {getDisplayDate(gasto)}
+                          </p>
+                        </div>
+                        <p className="font-inter text-right text-ds-body font-semibold text-text-primary">
                           {formatCurrency(Number(gasto.monto || 0))}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => void handleDelete(gasto.id)}
-                            className="font-inter rounded-theme-sm bg-error px-3 py-1.5 text-ds-secondary text-white hover:bg-error-hover"
-                          >
-                            Eliminar
-                          </button>
-                        </td>
+                        </p>
+                      </div>
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(gasto.id)}
+                          className="font-inter rounded-theme-sm bg-error px-3 py-1.5 text-ds-secondary text-white hover:bg-error-hover"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="mt-4 hidden overflow-x-auto rounded-theme-md border border-border sm:block">
+                  <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-background">
+                      <tr>
+                        <th className="font-inter px-4 py-3 text-left text-ds-secondary font-semibold text-text-secondary">Descripción</th>
+                        <th className="font-inter px-4 py-3 text-left text-ds-secondary font-semibold text-text-secondary">Categoría</th>
+                        <th className="font-inter px-4 py-3 text-left text-ds-secondary font-semibold text-text-secondary">Fecha</th>
+                        <th className="font-inter px-4 py-3 text-right text-ds-secondary font-semibold text-text-secondary">Monto</th>
+                        <th className="font-inter px-4 py-3 text-right text-ds-secondary font-semibold text-text-secondary">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-border bg-surface">
+                      {gastosFiltrados.map((gasto) => (
+                        <tr key={String(gasto.id)}>
+                          <td className="font-inter px-4 py-3 text-ds-body text-text-primary">{gasto.descripcion}</td>
+                          <td className="font-inter px-4 py-3 text-ds-body text-text-secondary">{gasto.categoria}</td>
+                          <td className="font-inter px-4 py-3 text-ds-body text-text-secondary">{getDisplayDate(gasto)}</td>
+                          <td className="font-inter px-4 py-3 text-right text-ds-body font-semibold text-text-primary">
+                            {formatCurrency(Number(gasto.monto || 0))}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => void handleDelete(gasto.id)}
+                              className="font-inter rounded-theme-sm bg-error px-3 py-1.5 text-ds-secondary text-white hover:bg-error-hover"
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             ) : null}
           </div>
         </section>
