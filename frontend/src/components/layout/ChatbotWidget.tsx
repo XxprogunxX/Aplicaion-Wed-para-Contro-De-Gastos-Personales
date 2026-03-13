@@ -13,6 +13,171 @@ type WidgetMessage = ChatHistoryMessage & {
 };
 
 const MAX_HISTORY_MESSAGES = 8;
+const MAX_LOCAL_HISTORY_MESSAGES = 50;
+const CHAT_HISTORY_STORAGE_PREFIX = 'chatbot-history';
+
+function decodeTokenUserId(token: string): string {
+  const payloadSegment = String(token || '').split('.')[1] || '';
+  if (!payloadSegment) {
+    return '';
+  }
+
+  try {
+    const normalizedPayload = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedPayload = normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, '=');
+    const jsonPayload = JSON.parse(atob(paddedPayload));
+    return String(jsonPayload?.id || jsonPayload?.sub || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+function getChatHistoryStorageKey(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const token = getBackendToken();
+  if (!token) {
+    return '';
+  }
+
+  const userId = decodeTokenUserId(token);
+  return `${CHAT_HISTORY_STORAGE_PREFIX}:${userId || 'unknown-user'}`;
+}
+
+function toTimestampValue(value?: string): number {
+  if (!value) {
+    return Number.NaN;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function normalizeHistoryOrder(messages: ChatHistoryMessage[]): ChatHistoryMessage[] {
+  return [...messages]
+    .map((message, index) => ({ message, index }))
+    .sort((a, b) => {
+      const aTime = toTimestampValue(a.message.createdAt);
+      const bTime = toTimestampValue(b.message.createdAt);
+      const hasATime = Number.isFinite(aTime);
+      const hasBTime = Number.isFinite(bTime);
+
+      if (hasATime && hasBTime && aTime !== bTime) {
+        return aTime - bTime;
+      }
+
+      if (hasATime !== hasBTime) {
+        return hasATime ? -1 : 1;
+      }
+
+      if (a.message.role !== b.message.role) {
+        return a.message.role === 'user' ? -1 : 1;
+      }
+
+      return a.index - b.index;
+    })
+    .map((entry) => entry.message);
+}
+
+function toPersistedChatHistory(messages: WidgetMessage[]): ChatHistoryMessage[] {
+  return messages
+    .filter((item) => !item.pending && item.id !== 'assistant-welcome')
+    .map((item) => ({
+      role: item.role,
+      content: item.content,
+      createdAt: item.createdAt || new Date().toISOString(),
+    }))
+    .filter((item) => String(item.content || '').trim().length > 0)
+    .slice(-MAX_LOCAL_HISTORY_MESSAGES);
+}
+
+function readLocalChatHistory(): ChatHistoryMessage[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  const storageKey = getChatHistoryStorageKey();
+  if (!storageKey) {
+    return [];
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(storageKey);
+    if (!rawValue) {
+      return [];
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    if (!Array.isArray(parsedValue)) {
+      return [];
+    }
+
+    const normalizedMessages = parsedValue
+      .map((item) => {
+        const role: 'user' | 'assistant' =
+          String(item?.role || '').toLowerCase() === 'assistant' ? 'assistant' : 'user';
+
+        return {
+          role,
+          content: String(item?.content || '').trim(),
+          createdAt: String(item?.createdAt || '').trim() || undefined,
+        };
+      })
+      .filter((item) => item.content.length > 0)
+      .slice(-MAX_LOCAL_HISTORY_MESSAGES);
+
+    return normalizeHistoryOrder(normalizedMessages);
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalChatHistory(messages: ChatHistoryMessage[]): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const storageKey = getChatHistoryStorageKey();
+  if (!storageKey) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify(
+        messages
+          .map((item) => ({
+            role: item.role,
+            content: item.content,
+            createdAt: item.createdAt || new Date().toISOString(),
+          }))
+          .slice(-MAX_LOCAL_HISTORY_MESSAGES)
+      )
+    );
+  } catch {
+    // Sin acción: storage puede estar deshabilitado.
+  }
+}
+
+function clearLocalChatHistory(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const storageKey = getChatHistoryStorageKey();
+  if (!storageKey) {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(storageKey);
+  } catch {
+    // Sin acción.
+  }
+}
 
 function buildId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -27,6 +192,7 @@ function toWidgetMessage(message: ChatHistoryMessage, index: number): WidgetMess
     id: `restored-${message.role}-${createdAtSegment}-${index}`,
     role: message.role,
     content: message.content,
+    createdAt: message.createdAt,
   };
 }
 
@@ -120,17 +286,29 @@ export default function ChatbotWidget() {
       setIsHydratingHistory(true);
       setErrorMessage(null);
 
+      const localHistory = readLocalChatHistory();
+
       try {
         const session = await api.getChatHistory();
         if (isCancelled) {
           return;
         }
 
-        const restoredMessages = Array.isArray(session?.messages)
-          ? session.messages.map((message, index) => toWidgetMessage(message, index))
+        const serverHistory = Array.isArray(session?.messages)
+          ? normalizeHistoryOrder(session.messages)
           : [];
 
-        setMessages(restoredMessages.length > 0 ? restoredMessages : INITIAL_MESSAGES);
+        const restoredMessages = serverHistory.map((message, index) => toWidgetMessage(message, index));
+
+        if (restoredMessages.length > 0) {
+          setMessages(restoredMessages);
+          writeLocalChatHistory(serverHistory);
+        } else if (localHistory.length > 0) {
+          setMessages(localHistory.map((message, index) => toWidgetMessage(message, index)));
+        } else {
+          setMessages(INITIAL_MESSAGES);
+        }
+
         setPendingAction(session?.pendingAction || null);
       } catch (error) {
         if (isCancelled) {
@@ -138,9 +316,16 @@ export default function ChatbotWidget() {
         }
 
         const apiError = error as ApiError;
-        setMessages(INITIAL_MESSAGES);
-        setPendingAction(null);
-        setErrorMessage(apiError.message || 'No fue posible cargar el historial del asistente');
+
+        if (localHistory.length > 0) {
+          setMessages(localHistory.map((message, index) => toWidgetMessage(message, index)));
+          setPendingAction(null);
+          setErrorMessage(null);
+        } else {
+          setMessages(INITIAL_MESSAGES);
+          setPendingAction(null);
+          setErrorMessage(apiError.message || 'No fue posible cargar el historial del asistente');
+        }
       } finally {
         if (!isCancelled) {
           setIsHydratingHistory(false);
@@ -175,6 +360,7 @@ export default function ChatbotWidget() {
 
   function applyAssistantResponse(pendingMessageId: string, response: {
     reply: string;
+    createdAt?: string;
     pendingAction?: ChatPendingAction | null;
     actionResult?: {
       type: 'create-expense' | 'create-budget';
@@ -183,14 +369,18 @@ export default function ChatbotWidget() {
   }) {
     setMessages((prev) => {
       const withoutPending = prev.filter((item) => item.id !== pendingMessageId);
-      return [
+      const assistantMessage: WidgetMessage = {
+        id: buildId('assistant'),
+        role: 'assistant',
+        content: response.reply,
+        createdAt: response.createdAt || new Date().toISOString(),
+      };
+      const nextMessages = [
         ...withoutPending,
-        {
-          id: buildId('assistant'),
-          role: 'assistant',
-          content: response.reply,
-        },
+        assistantMessage,
       ];
+      writeLocalChatHistory(toPersistedChatHistory(nextMessages));
+      return nextMessages;
     });
 
     if (response.pendingAction) {
@@ -226,6 +416,7 @@ export default function ChatbotWidget() {
 
     try {
       await api.clearChatHistory();
+      clearLocalChatHistory();
       setMessages(INITIAL_MESSAGES);
       setPendingAction(null);
     } catch (error) {
@@ -251,6 +442,7 @@ export default function ChatbotWidget() {
       id: buildId('user'),
       role: 'user',
       content: cleanMessage,
+      createdAt: new Date().toISOString(),
     };
 
     const pendingMessageId = buildId('assistant-pending');
@@ -269,7 +461,11 @@ export default function ChatbotWidget() {
       applyAssistantResponse(pendingMessageId, response);
     } catch (error) {
       const apiError = error as ApiError;
-      setMessages((prev) => prev.filter((item) => item.id !== pendingMessageId));
+      setMessages((prev) => {
+        const nextMessages = prev.filter((item) => item.id !== pendingMessageId);
+        writeLocalChatHistory(toPersistedChatHistory(nextMessages));
+        return nextMessages;
+      });
       setErrorMessage(apiError.message || 'No fue posible obtener respuesta del asistente');
     } finally {
       setIsSending(false);
@@ -325,7 +521,11 @@ export default function ChatbotWidget() {
       applyAssistantResponse(pendingMessageId, response);
     } catch (error) {
       const apiError = error as ApiError;
-      setMessages((prev) => prev.filter((item) => item.id !== pendingMessageId));
+      setMessages((prev) => {
+        const nextMessages = prev.filter((item) => item.id !== pendingMessageId);
+        writeLocalChatHistory(toPersistedChatHistory(nextMessages));
+        return nextMessages;
+      });
       setErrorMessage(apiError.message || 'No fue posible procesar la accion pendiente');
     } finally {
       setIsSending(false);

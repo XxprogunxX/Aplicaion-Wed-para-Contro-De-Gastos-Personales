@@ -61,10 +61,27 @@ function sanitizeMessages(messages) {
     return [];
   }
 
-  return messages
+  const safeMessages = messages
     .map((message) => sanitizeMessage(message))
     .filter(Boolean)
     .slice(-MAX_PERSISTED_MESSAGES);
+
+  let lastTimestamp = 0;
+
+  return safeMessages.map((message) => {
+    const parsedTimestamp = new Date(message.createdAt).getTime();
+    const baseTimestamp = Number.isFinite(parsedTimestamp) ? parsedTimestamp : Date.now();
+    const normalizedTimestamp = baseTimestamp <= lastTimestamp
+      ? lastTimestamp + 1
+      : baseTimestamp;
+
+    lastTimestamp = normalizedTimestamp;
+
+    return {
+      ...message,
+      createdAt: new Date(normalizedTimestamp).toISOString(),
+    };
+  });
 }
 
 function syncFallbackHistory(userId, messages) {
