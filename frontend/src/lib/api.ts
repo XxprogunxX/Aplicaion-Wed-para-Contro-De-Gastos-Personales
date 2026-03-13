@@ -10,6 +10,7 @@ import {
   AuthResponse,
   ChatbotResponse,
   ChatHistoryMessage,
+  ChatHistoryState,
   Categoria,
   Gasto,
   GastoInput,
@@ -259,6 +260,15 @@ class ApiClient {
   }
 
   // API de Chatbot IA
+  async getChatHistory(): Promise<ChatHistoryState> {
+    const response = await this.client.get('/api/chat/history');
+    return response.data;
+  }
+
+  async clearChatHistory(): Promise<void> {
+    await this.client.delete('/api/chat/history');
+  }
+
   async sendChatMessage(
     message: string,
     history: ChatHistoryMessage[] = [],

@@ -6,12 +6,31 @@ jest.mock('../src/services/geminiService', () => ({
     model: 'gemini-test',
     createdAt: '2026-03-06T00:00:00.000Z',
   }),
+  getPendingActionForUser: jest.fn().mockReturnValue(null),
+}));
+
+jest.mock('../src/services/chatHistoryService', () => ({
+  appendChatMessagesForUser: jest.fn().mockResolvedValue([]),
+  getChatHistoryForUser: jest.fn().mockResolvedValue([]),
 }));
 
 const app = require('../src/index');
-const { generateChatbotReply } = require('../src/services/geminiService');
+const { generateChatbotReply, getPendingActionForUser } = require('../src/services/geminiService');
+const { appendChatMessagesForUser, getChatHistoryForUser } = require('../src/services/chatHistoryService');
 
 describe('Chat route', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    generateChatbotReply.mockResolvedValue({
+      reply: 'Te recomiendo revisar gastos variables primero.',
+      model: 'gemini-test',
+      createdAt: '2026-03-06T00:00:00.000Z',
+    });
+    getPendingActionForUser.mockReturnValue(null);
+    getChatHistoryForUser.mockResolvedValue([]);
+    appendChatMessagesForUser.mockResolvedValue([]);
+  });
+
   it('POST /api/chat responde mensaje del asistente', async () => {
     const response = await request(app)
       .post('/api/chat')
@@ -38,6 +57,18 @@ describe('Chat route', () => {
         username: 'Usuario Demo',
       },
     });
+
+    expect(appendChatMessagesForUser).toHaveBeenCalledWith(
+      '00000000-0000-0000-0000-000000000001',
+      [
+        { role: 'user', content: 'Como puedo ahorrar mas este mes?' },
+        {
+          role: 'assistant',
+          content: 'Te recomiendo revisar gastos variables primero.',
+          createdAt: '2026-03-06T00:00:00.000Z',
+        },
+      ]
+    );
   });
 
   it('POST /api/chat valida message requerido', async () => {
@@ -75,5 +106,77 @@ describe('Chat route', () => {
         username: 'Usuario Demo',
       },
     });
+
+    expect(appendChatMessagesForUser).toHaveBeenCalledWith(
+      '00000000-0000-0000-0000-000000000001',
+      [
+        {
+          role: 'assistant',
+          content: 'Te recomiendo revisar gastos variables primero.',
+          createdAt: '2026-03-06T00:00:00.000Z',
+        },
+      ]
+    );
+  });
+
+  it('GET /api/chat/history devuelve historial y accion pendiente', async () => {
+    getChatHistoryForUser.mockResolvedValue([
+      {
+        role: 'user',
+        content: 'Hola',
+        createdAt: '2026-03-05T10:00:00.000Z',
+      },
+      {
+        role: 'assistant',
+        content: 'Hola, en que te ayudo?',
+        createdAt: '2026-03-05T10:00:02.000Z',
+      },
+    ]);
+    getPendingActionForUser.mockReturnValue({
+      id: 'accion-1',
+      type: 'create-expense',
+      descripcion: 'Cafe',
+      monto: 35,
+      categoria: 'Alimentacion',
+      expiresAt: '2026-03-05T11:00:00.000Z',
+    });
+
+    const response = await request(app)
+      .get('/api/chat/history')
+      .set('Authorization', 'Bearer token-valido');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      error: false,
+      message: 'Historial obtenido correctamente',
+      data: {
+        messages: [
+          {
+            role: 'user',
+            content: 'Hola',
+            createdAt: '2026-03-05T10:00:00.000Z',
+          },
+          {
+            role: 'assistant',
+            content: 'Hola, en que te ayudo?',
+            createdAt: '2026-03-05T10:00:02.000Z',
+          },
+        ],
+        pendingAction: {
+          id: 'accion-1',
+          type: 'create-expense',
+          descripcion: 'Cafe',
+          monto: 35,
+          categoria: 'Alimentacion',
+          expiresAt: '2026-03-05T11:00:00.000Z',
+        },
+      },
+    });
+
+    expect(getChatHistoryForUser).toHaveBeenCalledWith(
+      '00000000-0000-0000-0000-000000000001',
+      { limit: 50 }
+    );
+    expect(getPendingActionForUser).toHaveBeenCalledWith('00000000-0000-0000-0000-000000000001');
   });
 });

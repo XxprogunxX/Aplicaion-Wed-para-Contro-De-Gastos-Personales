@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { getBackendToken } from '@/lib/session';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { emitGastosUpdated, emitPresupuestosUpdated } from '@/lib/utils';
 import type { ApiError, ChatHistoryMessage, ChatPendingAction } from '@/types';
@@ -15,6 +16,18 @@ const MAX_HISTORY_MESSAGES = 8;
 
 function buildId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function toWidgetMessage(message: ChatHistoryMessage, index: number): WidgetMessage {
+  const createdAtSegment = message.createdAt
+    ? new Date(message.createdAt).getTime()
+    : Date.now();
+
+  return {
+    id: `restored-${message.role}-${createdAtSegment}-${index}`,
+    role: message.role,
+    content: message.content,
+  };
 }
 
 function formatPendingDate(value?: string): string {
@@ -48,9 +61,13 @@ export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [messages, setMessages] = useState<WidgetMessage[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<WidgetMessage[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<ChatPendingAction | null>(null);
+  const [isHydratingHistory, setIsHydratingHistory] = useState(false);
+  const [hasHydratedHistory, setHasHydratedHistory] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -79,11 +96,65 @@ export default function ChatbotWidget() {
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && hasHydratedHistory) {
       inputRef.current?.focus();
       resizeInput();
     }
-  }, [isOpen]);
+  }, [hasHydratedHistory, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || hasHydratedHistory) {
+      return;
+    }
+
+    if (!getBackendToken()) {
+      setMessages(INITIAL_MESSAGES);
+      setPendingAction(null);
+      setHasHydratedHistory(true);
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function hydrateHistory() {
+      setIsHydratingHistory(true);
+      setErrorMessage(null);
+
+      try {
+        const session = await api.getChatHistory();
+        if (isCancelled) {
+          return;
+        }
+
+        const restoredMessages = Array.isArray(session?.messages)
+          ? session.messages.map((message, index) => toWidgetMessage(message, index))
+          : [];
+
+        setMessages(restoredMessages.length > 0 ? restoredMessages : INITIAL_MESSAGES);
+        setPendingAction(session?.pendingAction || null);
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        const apiError = error as ApiError;
+        setMessages(INITIAL_MESSAGES);
+        setPendingAction(null);
+        setErrorMessage(apiError.message || 'No fue posible cargar el historial del asistente');
+      } finally {
+        if (!isCancelled) {
+          setIsHydratingHistory(false);
+          setHasHydratedHistory(true);
+        }
+      }
+    }
+
+    hydrateHistory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [hasHydratedHistory, isOpen]);
 
   useEffect(() => {
     if (!inputValue) {
@@ -144,11 +215,32 @@ export default function ChatbotWidget() {
     }
   }
 
+  async function handleClearHistory() {
+    if (isSending || isHydratingHistory || isClearingHistory) {
+      return;
+    }
+
+    setIsConfirmingClear(false);
+    setIsClearingHistory(true);
+    setErrorMessage(null);
+
+    try {
+      await api.clearChatHistory();
+      setMessages(INITIAL_MESSAGES);
+      setPendingAction(null);
+    } catch (error) {
+      const apiError = error as ApiError;
+      setErrorMessage(apiError.message || 'No fue posible eliminar el historial');
+    } finally {
+      setIsClearingHistory(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const cleanMessage = inputValue.trim();
-    if (!cleanMessage || isSending) {
+    if (!cleanMessage || isSending || isHydratingHistory || !hasHydratedHistory) {
       return;
     }
 
@@ -203,7 +295,7 @@ export default function ChatbotWidget() {
   }
 
   async function handlePendingActionDecision(decision: 'confirm' | 'cancel') {
-    if (!pendingAction || isSending) {
+    if (!pendingAction || isSending || isHydratingHistory || !hasHydratedHistory) {
       return;
     }
 
@@ -254,18 +346,57 @@ export default function ChatbotWidget() {
               <p className="font-inter text-ds-secondary font-semibold text-text-primary">Asistente IA</p>
               <p className="font-inter text-xs text-text-secondary">Asistente IA para finanzas personales</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="rounded-theme-sm px-2 py-1 text-ds-secondary text-text-secondary transition-colors hover:bg-surface hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-              aria-label="Cerrar asistente"
-            >
-              Cerrar
-            </button>
+            <div className="flex items-center gap-2">
+              {isConfirmingClear ? (
+                <>
+                  <span className="text-xs text-text-secondary">¿Borrar historial?</span>
+                  <button
+                    type="button"
+                    onClick={handleClearHistory}
+                    className="rounded-theme-sm bg-error px-2 py-1 text-xs font-medium text-white transition-colors hover:opacity-80 disabled:opacity-60"
+                    disabled={isClearingHistory}
+                    aria-label="Confirmar borrado de historial"
+                  >
+                    Sí
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingClear(false)}
+                    className="rounded-theme-sm border border-border px-2 py-1 text-xs font-medium text-text-primary transition-colors hover:bg-surface"
+                    aria-label="Cancelar borrado"
+                  >
+                    No
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingClear(true)}
+                  className="rounded-theme-sm px-2 py-1 text-ds-secondary text-text-secondary transition-colors hover:bg-surface hover:text-error focus:outline-none focus:ring-2 focus:ring-error disabled:opacity-40"
+                  aria-label="Limpiar historial del asistente"
+                  disabled={isClearingHistory || isHydratingHistory || !hasHydratedHistory}
+                  title="Limpiar historial"
+                >
+                  Limpiar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setIsOpen(false); setIsConfirmingClear(false); }}
+                className="rounded-theme-sm px-2 py-1 text-ds-secondary text-text-secondary transition-colors hover:bg-surface hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="Cerrar asistente"
+              >
+                Cerrar
+              </button>
+            </div>
           </header>
 
           <div className="max-h-[22rem] min-h-[18rem] space-y-3 overflow-y-auto bg-surface px-3 py-4" role="log" aria-live="polite">
-            {messages.map((message) => {
+            {isHydratingHistory ? (
+              <p role="status" className="text-sm text-text-secondary">
+                Cargando conversacion...
+              </p>
+            ) : messages.map((message) => {
               const isUser = message.role === 'user';
               return (
                 <article
@@ -304,7 +435,7 @@ export default function ChatbotWidget() {
                     type="button"
                     className="rounded-theme-sm bg-primary px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
                     onClick={() => handlePendingActionDecision('confirm')}
-                    disabled={isSending}
+                    disabled={isSending || isHydratingHistory}
                   >
                     Confirmar
                   </button>
@@ -312,7 +443,7 @@ export default function ChatbotWidget() {
                     type="button"
                     className="rounded-theme-sm border border-border px-2 py-1 text-xs font-medium text-text-primary transition-colors hover:bg-surface disabled:opacity-60"
                     onClick={() => handlePendingActionDecision('cancel')}
-                    disabled={isSending}
+                    disabled={isSending || isHydratingHistory}
                   >
                     Cancelar
                   </button>
@@ -333,7 +464,7 @@ export default function ChatbotWidget() {
                 onKeyDown={handleInputKeyDown}
                 placeholder="Escribe tu mensaje..."
                 className="font-inter min-h-[2.75rem] w-full resize-none rounded-theme-sm border border-border bg-surface px-3 py-2 text-[15px] leading-6 text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-primary focus:ring-2 focus:ring-primary/20"
-                disabled={isSending}
+                disabled={isSending || isHydratingHistory || !hasHydratedHistory}
                 maxLength={1200}
                 spellCheck={false}
                 autoCorrect="off"
@@ -342,7 +473,7 @@ export default function ChatbotWidget() {
               <button
                 type="submit"
                 className="rounded-theme-sm bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={!inputValue.trim() || isSending}
+                disabled={!inputValue.trim() || isSending || isHydratingHistory || !hasHydratedHistory}
               >
                 Enviar
               </button>

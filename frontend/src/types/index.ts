@@ -126,6 +126,12 @@ export interface ApiError {
 export interface ChatHistoryMessage {
   role: 'user' | 'assistant';
   content: string;
+  createdAt?: string;
+}
+
+export interface ChatHistoryState {
+  messages: ChatHistoryMessage[];
+  pendingAction?: ChatPendingAction | null;
 }
 
 export interface ChatPendingAction {

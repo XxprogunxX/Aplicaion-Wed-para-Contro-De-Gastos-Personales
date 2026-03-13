@@ -32,6 +32,7 @@ NODE_ENV=development
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 SUPABASE_PUBLISHABLE_KEY=your_publishable_or_anon_key
+SUPABASE_CHAT_HISTORY_TABLE=chat_messages
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
 GROQ_API_KEY=your_groq_api_key
@@ -43,6 +44,8 @@ El backend usa `Gemini` como proveedor principal del chat. Si Gemini falla por c
 Usa `SUPABASE_SERVICE_ROLE_KEY` en produccion (recomendado). Si no la tienes aun, puedes usar `SUPABASE_PUBLISHABLE_KEY` de forma temporal.
 
 Si `SUPABASE_URL` y alguna clave de Supabase no estan definidas, el backend usa datos en memoria para desarrollo rapido.
+
+Para persistir el historial del chatbot, crea la tabla `chat_messages` en Supabase o configura `SUPABASE_CHAT_HISTORY_TABLE` con otro nombre equivalente.
 
 ## Ejecutar el servidor
 
@@ -100,6 +103,7 @@ backend/
 - `GET /api/reportes/anual` - Obtener reporte anual
 
 ### Chatbot IA
+- `GET /api/chat/history` - Obtener historial persistido y accion pendiente del asistente (requiere JWT)
 - `POST /api/chat` - Enviar mensaje al asistente IA (requiere JWT)
 
 ## Docker

@@ -2308,5 +2308,6 @@ function __resetChatActionStateForTests() {
 module.exports = {
   generateChatbotReply,
   extractMultipleExpenses,
+  getPendingActionForUser: (userId) => buildPendingActionDto(getLatestPendingExpenseAction(userId)),
   __resetChatActionStateForTests,
 };
