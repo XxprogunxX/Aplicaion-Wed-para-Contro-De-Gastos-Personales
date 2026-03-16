@@ -33,6 +33,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Ruta raíz para verificar que el servicio está activo
+app.get('/', (req, res) => {
+  res.status(200).send('¡Estoy vivo! El backend está corriendo.');
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor ejecutándose' });

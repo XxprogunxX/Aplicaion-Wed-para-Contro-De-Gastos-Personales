@@ -5,7 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatbotWidget from './ChatbotWidget';
-import { getBackendToken } from '@/lib/session';
+import { api } from '@/lib/api';
+import { clearBackendToken, getBackendToken } from '@/lib/session';
 
 interface LayoutShellProps {
   children: React.ReactNode;
@@ -23,22 +24,61 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   const hideChrome = authPaths.includes(pathname);
 
   useEffect(() => {
-    const token = getBackendToken();
-    const isAuthenticated = Boolean(token);
+    let isCancelled = false;
 
-    if (!isAuthPath && !isAuthenticated) {
-      setReadyToRender(false);
-      router.replace('/auth/login');
-      return;
-    }
+    const syncAuthState = async () => {
+      const token = getBackendToken();
+      const hasToken = Boolean(token);
 
-    if (isAuthPath && isAuthenticated) {
-      setReadyToRender(false);
-      router.replace('/');
-      return;
-    }
+      if (!hasToken) {
+        if (!isAuthPath) {
+          setReadyToRender(false);
+          router.replace('/auth/login');
+          return;
+        }
 
-    setReadyToRender(true);
+        if (!isCancelled) {
+          setReadyToRender(true);
+        }
+        return;
+      }
+
+      try {
+        await api.getProfile();
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (isAuthPath) {
+          setReadyToRender(false);
+          router.replace('/');
+          return;
+        }
+
+        setReadyToRender(true);
+      } catch {
+        clearBackendToken();
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (!isAuthPath) {
+          setReadyToRender(false);
+          router.replace('/auth/login');
+          return;
+        }
+
+        setReadyToRender(true);
+      }
+    };
+
+    void syncAuthState();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [isAuthPath, router]);
 
   if (!readyToRender) {
