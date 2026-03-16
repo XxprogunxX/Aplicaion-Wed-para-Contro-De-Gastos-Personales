@@ -1,24 +1,41 @@
-
-/**
- * Middleware de autenticación 
- */
 function authMiddleware(req, res, next) {
-  const token = req.headers.authorization;
 
-  // Sin token
-  if (!token) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
     return res.status(401).json({
       error: true,
-      message: 'Token requerido',
+      message: "Token requerido",
       status: 401
     });
   }
 
-  // Token inválido
-  if (token !== 'Bearer token-valido') {
+  const parts = authHeader.split(" ");
+
+  if (parts.length !== 2) {
     return res.status(401).json({
       error: true,
-      message: 'Token inválido',
+      message: "Formato de token inválido",
+      status: 401
+    });
+  }
+
+  const scheme = parts[0];
+  const token = parts[1];
+
+  if (scheme !== "Bearer") {
+    return res.status(401).json({
+      error: true,
+      message: "Formato de autorización incorrecto",
+      status: 401
+    });
+  }
+
+  // TOKEN QUE DEVUELVE EL LOGIN
+  if (token !== "demo-token-123") {
+    return res.status(401).json({
+      error: true,
+      message: "Token inválido",
       status: 401
     });
   }
@@ -27,15 +44,3 @@ function authMiddleware(req, res, next) {
 }
 
 module.exports = authMiddleware;
-
-
-// TODO: Implementar validación con JWT real en producción
-
-// validateRequest(schema)
-// - Validar datos de entrada con Joi o similar
-// - Retornar 400 si datos inválidos
-
-// errorHandler
-// - Capturar errores
-// - Formatear respuesta de error
-// - Incluir stack trace solo en desarrollo

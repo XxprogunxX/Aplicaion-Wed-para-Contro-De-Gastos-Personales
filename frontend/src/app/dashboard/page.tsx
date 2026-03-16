@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Gasto = {
   id: number;
@@ -11,17 +12,33 @@ type Gasto = {
 
 export default function DashboardPage() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
-    fetch("http://localhost:3002/api/gastos")
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.replace("/auth/login");
+      return;
+    }
+
+    fetch("http://localhost:3002/api/gastos", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
-        setGastos(data.data);
+        if (Array.isArray(data.data)) {
+          setGastos(data.data);
+        } else {
+          setGastos([]);
+        }
       })
       .catch((err) => console.error(err));
-  }, []);
+  }, [router]);
 
-  const total = gastos.reduce((sum, g) => sum + g.monto, 0);
+  const total = (gastos ?? []).reduce((sum, g) => sum + g.monto, 0);
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-8">
@@ -34,10 +51,7 @@ export default function DashboardPage() {
 
         <div className="space-y-2">
           {gastos.map((g) => (
-            <div
-              key={g.id}
-              className="flex justify-between border rounded p-3"
-            >
+            <div key={g.id} className="flex justify-between border rounded p-3">
               <span>{g.descripcion}</span>
               <span>${g.monto}</span>
             </div>

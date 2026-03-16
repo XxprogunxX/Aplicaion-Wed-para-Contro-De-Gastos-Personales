@@ -13,6 +13,7 @@ const authMiddleware = require('./middleware/auth');
 
 // Rutas
 const gastosRoutes = require('./routes/routes');
+const authRoutes = require('./routes/authRoutes');
 
 const PORT = process.env.PORT || 3000;
 
@@ -34,6 +35,7 @@ app.get('/health', (req, res) => {
 
 // Rutas públicas
 // TODO: Agregar rutas de auth aquí
+app.use('/api/auth', authRoutes);
 
 // Rutas protegidas (requieren autenticación)
 app.use('/api/gastos', authMiddleware, gastosRoutes);
