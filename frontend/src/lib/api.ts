@@ -1,7 +1,48 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
-import { ApiError, AuthResponse, Gasto, Categoria, Presupuesto, ReporteMensual, GastoInput } from '@/types';
+import {
+  emitCategoriasUpdated,
+  emitPresupuestosUpdated,
+  emitGastosUpdated,
+} from '@/lib/utils';
+import {
+  ApiError,
+  ApiMessageResponse,
+  AuthResponse,
+  ChatbotResponse,
+  ChatHistoryMessage,
+  ChatHistoryState,
+  Categoria,
+  Gasto,
+  GastoInput,
+  Presupuesto,
+  ReporteAnual,
+  ReporteComparativo,
+  ReporteMensual,
+  ReportePorCategoria,
+  Usuario,
+} from '@/types';
+import { getBackendToken } from '@/lib/session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+interface BackendResponse<T> {
+  data?: T;
+  error?: boolean;
+  message?: string;
+  status?: number;
+}
+
+interface ReporteComparativoParams {
+  mesActual?: number;
+  anioActual?: number;
+  mesComparar?: number;
+  anioComparar?: number;
+}
+
+interface SendChatMessageOptions {
+  pendingActionId?: string;
+  actionDecision?: 'confirm' | 'cancel';
+}
 
 class ApiClient {
   private client: AxiosInstance;
@@ -16,7 +57,7 @@ class ApiClient {
 
     // Interceptor para agregar token JWT si existe
     this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = getBackendToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -26,8 +67,15 @@ class ApiClient {
     // Interceptor para manejar respuestas
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        // Para respuestas exitosas, normalizar para retornar solo data
-        response.data = response.data.data;
+        // Normalizar respuestas del backend solo cuando exista el campo data
+        const payload = response.data as BackendResponse<unknown>;
+        if (
+          payload &&
+          typeof payload === 'object' &&
+          Object.prototype.hasOwnProperty.call(payload, 'data')
+        ) {
+          response.data = payload.data;
+        }
         return response;
       },
       (error: AxiosError) => {
@@ -73,29 +121,37 @@ class ApiClient {
     return response.data;
   }
 
+  async getProfile(): Promise<Usuario> {
+    const response = await this.client.get('/api/auth/profile');
+    return response.data;
+  }
+
   // API de Gastos
   async getGastos(): Promise<Gasto[]> {
     const response = await this.client.get('/api/gastos');
     return response.data;
   }
 
-  async getGastoById(id: string): Promise<Gasto> {
+  async getGastoById(id: string | number): Promise<Gasto> {
     const response = await this.client.get(`/api/gastos/${id}`);
     return response.data;
   }
 
   async createGasto(gasto: GastoInput): Promise<Gasto> {
     const response = await this.client.post('/api/gastos', gasto);
+    emitGastosUpdated();
     return response.data;
   }
 
-  async updateGasto(id: string, gasto: Partial<Gasto>): Promise<Gasto> {
+  async updateGasto(id: string | number, gasto: Partial<Gasto>): Promise<Gasto> {
     const response = await this.client.put(`/api/gastos/${id}`, gasto);
+    emitGastosUpdated();
     return response.data;
   }
 
-  async deleteGasto(id: string): Promise<{ success: boolean }> {
+  async deleteGasto(id: string | number): Promise<ApiMessageResponse> {
     const response = await this.client.delete(`/api/gastos/${id}`);
+    emitGastosUpdated();
     return response.data;
   }
 
@@ -105,8 +161,29 @@ class ApiClient {
     return response.data;
   }
 
-  async createCategoria(categoria: Omit<Categoria, 'id'>): Promise<Categoria> {
+  async createCategoria(categoria: {
+    nombre: string;
+    color?: string;
+    icono?: string;
+    esGlobal?: boolean;
+  }): Promise<Categoria> {
     const response = await this.client.post('/api/categorias', categoria);
+    emitCategoriasUpdated();
+    return response.data;
+  }
+
+  async updateCategoria(
+    id: string | number,
+    categoria: Partial<Pick<Categoria, 'nombre' | 'color' | 'icono'>>
+  ): Promise<Categoria> {
+    const response = await this.client.put(`/api/categorias/${id}`, categoria);
+    emitCategoriasUpdated();
+    return response.data;
+  }
+
+  async deleteCategoria(id: string | number): Promise<ApiMessageResponse> {
+    const response = await this.client.delete(`/api/categorias/${id}`);
+    emitCategoriasUpdated();
     return response.data;
   }
 
@@ -116,8 +193,28 @@ class ApiClient {
     return response.data;
   }
 
-  async createPresupuesto(presupuesto: Omit<Presupuesto, 'id' | 'gastado'>): Promise<Presupuesto> {
+  async getPresupuestosEstado(): Promise<Presupuesto[]> {
+    const response = await this.client.get('/api/presupuestos/estado');
+    return response.data;
+  }
+
+  async createPresupuesto(
+    presupuesto: Omit<Presupuesto, 'id' | 'userId' | 'gastado' | 'disponible' | 'porcentajeUsado' | 'excedido'>
+  ): Promise<Presupuesto> {
     const response = await this.client.post('/api/presupuestos', presupuesto);
+    emitPresupuestosUpdated();
+    return response.data;
+  }
+
+  async updatePresupuesto(id: string | number, presupuesto: Partial<Presupuesto>): Promise<Presupuesto> {
+    const response = await this.client.put(`/api/presupuestos/${id}`, presupuesto);
+    emitPresupuestosUpdated();
+    return response.data;
+  }
+
+  async deletePresupuesto(id: string | number): Promise<ApiMessageResponse> {
+    const response = await this.client.delete(`/api/presupuestos/${id}`);
+    emitPresupuestosUpdated();
     return response.data;
   }
 
@@ -127,8 +224,64 @@ class ApiClient {
     return response.data;
   }
 
-  async getReporteAnual(anio: number): Promise<{ anio: number; totalGastado: number; gastosPorCategoria: { [categoria: string]: number } }> {
+  async getReporteAnual(anio: number): Promise<ReporteAnual> {
     const response = await this.client.get(`/api/reportes/anual?anio=${anio}`);
+    return response.data;
+  }
+
+  async getReportePorCategoria(): Promise<ReportePorCategoria> {
+    const response = await this.client.get('/api/reportes/categorias');
+    return response.data;
+  }
+
+  async getReporteComparativo(params: ReporteComparativoParams = {}): Promise<ReporteComparativo> {
+    const query = new URLSearchParams();
+
+    if (typeof params.mesActual === 'number') {
+      query.set('mesActual', String(params.mesActual));
+    }
+    if (typeof params.anioActual === 'number') {
+      query.set('anioActual', String(params.anioActual));
+    }
+    if (typeof params.mesComparar === 'number') {
+      query.set('mesComparar', String(params.mesComparar));
+    }
+    if (typeof params.anioComparar === 'number') {
+      query.set('anioComparar', String(params.anioComparar));
+    }
+
+    const queryString = query.toString();
+    const endpoint = queryString
+      ? `/api/reportes/comparativo?${queryString}`
+      : '/api/reportes/comparativo';
+
+    const response = await this.client.get(endpoint);
+    return response.data;
+  }
+
+  // API de Chatbot IA
+  async getChatHistory(): Promise<ChatHistoryState> {
+    const response = await this.client.get('/api/chat/history');
+    return response.data;
+  }
+
+  async clearChatHistory(): Promise<void> {
+    await this.client.delete('/api/chat/history');
+  }
+
+  async sendChatMessage(
+    message: string,
+    history: ChatHistoryMessage[] = [],
+    options: SendChatMessageOptions = {}
+  ): Promise<ChatbotResponse> {
+    const payload = {
+      message,
+      history,
+      ...(options.pendingActionId ? { pendingActionId: options.pendingActionId } : {}),
+      ...(options.actionDecision ? { actionDecision: options.actionDecision } : {}),
+    };
+
+    const response = await this.client.post('/api/chat', payload);
     return response.data;
   }
 }

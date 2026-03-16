@@ -3,14 +3,14 @@
 ## Tecnologías
 - Runtime: Node.js
 - Framework: Express.js
-- Base de datos: MongoDB
+- Base de datos: Supabase (PostgreSQL) / fallback en memoria
 - Lenguaje: JavaScript (ES6+)
 - Gestor de paquetes: npm
 
 ## Requisitos
 - Node.js v18 o superior
 - npm
-- MongoDB (local o MongoDB Atlas)
+- Proyecto de Supabase (opcional en desarrollo si usas fallback en memoria)
 
 ## Instalación
 
@@ -27,10 +27,25 @@ Crear un archivo `.env` en la raíz del backend con:
 
 ```env
 PORT=3000
-MONGODB_URI=mongodb://localhost:27017/gastos-personales
 JWT_SECRET=tu_clave_secreta_aqui
 NODE_ENV=development
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_PUBLISHABLE_KEY=your_publishable_or_anon_key
+SUPABASE_CHAT_HISTORY_TABLE=chat_messages
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.1-8b-instant
 ```
+
+El backend usa `Gemini` como proveedor principal del chat. Si Gemini falla por cuota o indisponibilidad temporal y `GROQ_API_KEY` esta configurada, hace failover automatico a Groq sin cambiar el flujo funcional del asistente.
+
+Usa `SUPABASE_SERVICE_ROLE_KEY` en produccion (recomendado). Si no la tienes aun, puedes usar `SUPABASE_PUBLISHABLE_KEY` de forma temporal.
+
+Si `SUPABASE_URL` y alguna clave de Supabase no estan definidas, el backend usa datos en memoria para desarrollo rapido.
+
+Para persistir el historial del chatbot, crea la tabla `chat_messages` en Supabase o configura `SUPABASE_CHAT_HISTORY_TABLE` con otro nombre equivalente.
 
 ## Ejecutar el servidor
 
@@ -86,6 +101,10 @@ backend/
 ### Reportes
 - `GET /api/reportes/mensual` - Obtener reporte mensual
 - `GET /api/reportes/anual` - Obtener reporte anual
+
+### Chatbot IA
+- `GET /api/chat/history` - Obtener historial persistido y accion pendiente del asistente (requiere JWT)
+- `POST /api/chat` - Enviar mensaje al asistente IA (requiere JWT)
 
 ## Docker
 

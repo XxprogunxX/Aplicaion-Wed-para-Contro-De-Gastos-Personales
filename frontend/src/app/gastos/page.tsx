@@ -22,6 +22,22 @@ export default function GastosPage() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
 
+  const openDatePicker = (event: React.MouseEvent<HTMLInputElement>) => {
+    const dateInput = event.currentTarget as HTMLInputElement & { showPicker?: () => void };
+    try {
+      dateInput.showPicker?.();
+    } catch {
+      // Some browsers restrict showPicker unless all gesture conditions are met.
+    }
+  };
+
+  const preventManualDateTyping = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const blockedKeys = ['Backspace', 'Delete'];
+    if (event.key.length === 1 || blockedKeys.includes(event.key)) {
+      event.preventDefault();
+    }
+  };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -143,11 +159,13 @@ export default function GastosPage() {
                   <input
                     id="date"
                     name="fecha"
-                    type="text"
-                    className="font-inter w-full rounded-theme-sm border border-border bg-surface px-3 py-2 text-ds-body text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="DD/MM/AAAA"
+                    type="date"
+                    lang="es-ES"
+                    className="font-inter w-full rounded-theme-sm border border-border bg-surface px-3 py-2 text-ds-body text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                     value={form.fecha}
                     onChange={handleChange}
+                    onClick={openDatePicker}
+                    onKeyDown={preventManualDateTyping}
                   />
                 </div>
                 <div>
