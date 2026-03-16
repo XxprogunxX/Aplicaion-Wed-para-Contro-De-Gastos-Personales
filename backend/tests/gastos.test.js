@@ -2,14 +2,14 @@ const request = require('supertest');
 
 jest.mock('../src/controllers/gastosController', () => ({
   getAll: jest.fn((req, res) =>
-    res.json({
-      error: false,
-      message: 'Mock gastos',
-      data: [
-        { id: 1, descripcion: 'Cafe', monto: 10, categoria: 'Alimentacion' },
-      ],
-    })
-  ),
+  res.status(200).json({
+    error: false,
+    message: 'Mock gastos',
+    data: [
+      { id: 1, descripcion: 'Cafe', monto: 10, categoria: 'Alimentacion' },
+    ],
+  })
+),
   getById: jest.fn(),
   create: jest.fn((req, res) =>
     res.status(201).json({
