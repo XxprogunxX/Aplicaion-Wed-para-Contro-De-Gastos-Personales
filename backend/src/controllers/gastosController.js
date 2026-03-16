@@ -14,11 +14,11 @@ const gastos = [
  */
 async function getAll(req, res, next) {
   try {
-    res.json({
-      error: false,
-      message: 'Gastos obtenidos correctamente',
-      data: gastos
-    });
+    res.status(200).json({
+  error: false,
+  message: 'Gastos obtenidos correctamente',
+  data: gastos
+});
   } catch (err) {
     next(err);
   }
@@ -41,11 +41,11 @@ async function getById(req, res, next) {
       });
     }
 
-    res.json({
-      error: false,
-      message: 'Gasto obtenido correctamente',
-      data: gasto
-    });
+    res.status(200).json({
+  error: false,
+  message: 'Gasto obtenido correctamente',
+  data: gasto
+});
   } catch (err) {
     // Lanzar error para que lo capture el middleware
     next(err);
@@ -111,11 +111,11 @@ async function update(req, res, next) {
     if (monto) {gasto.monto = monto;}
     if (categoria) {gasto.categoria = categoria;}
 
-    res.json({
-      error: false,
-      message: 'Gasto actualizado correctamente',
-      data: gasto
-    });
+    res.status(200).json({
+  error: false,
+  message: 'Gasto actualizado correctamente',
+  data: gasto
+});
   } catch (err) {
     next(err);
   }
@@ -140,10 +140,10 @@ async function deleteGasto(req, res, next) {
 
     gastos.splice(index, 1);
 
-    res.json({
-      error: false,
-      message: 'Gasto eliminado correctamente'
-    });
+    res.status(200).json({
+  error: false,
+  message: 'Gasto eliminado correctamente'
+});
   } catch (err) {
     next(err);
   }
