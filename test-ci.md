@@ -23,7 +23,7 @@ Este proyecto usa GitHub Actions para validar calidad técnica antes de desplega
 - Lighthouse Performance: `>= 0.75`
 - Lighthouse Accessibility: `>= 0.90`
 - Lighthouse Best Practices: `>= 0.85`
-- Bundle total JS (`.next/static/chunks`): `<= 1400000` bytes
+- Bundle total JS (`.next/static/chunks`): `<= 1430000` bytes
 - Chunk JS más grande: `<= 400000` bytes
 
 > Los budgets están en `frontend/bundle-budget.json` y se ajustan según la evolución del producto.
