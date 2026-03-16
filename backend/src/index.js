@@ -21,11 +21,23 @@ const reportesRoutes = require('./routes/reportesRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 
 const PORT = process.env.PORT || 3000;
+const defaultCorsOrigins = ['http://localhost:3001'];
+const allowedOrigins = String(process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const corsOrigins = allowedOrigins.length > 0 ? allowedOrigins : defaultCorsOrigins;
 
 // Configuración
 app.use(
   cors({
-    origin: 'http://localhost:3001',
+    origin(origin, callback) {
+      if (!origin || corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
@@ -63,6 +75,7 @@ if (require.main === module) {
     console.log(`✓ Servidor ejecutándose en puerto ${PORT}`);
     console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`✓ Database mode: ${isSupabaseConfigured ? 'supabase' : 'in-memory fallback'}`);
+    console.log(`✓ CORS origins: ${corsOrigins.join(', ')}`);
     if (isSupabaseConfigured) {
       console.log(`✓ Supabase key mode: ${supabaseKeyMode}`);
     }
