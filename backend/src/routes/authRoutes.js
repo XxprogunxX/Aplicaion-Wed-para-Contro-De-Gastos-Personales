@@ -20,6 +20,12 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 
 /**
+ * POST /api/auth/forgot-password
+ * Body: { email }
+ */
+router.post('/forgot-password', authController.forgotPassword);
+
+/**
  * POST /api/auth/logout
  */
 router.post('/logout', authMiddleware, authController.logout);

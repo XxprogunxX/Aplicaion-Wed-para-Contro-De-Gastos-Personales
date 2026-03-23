@@ -9,6 +9,7 @@ import {
   ApiError,
   ApiMessageResponse,
   AuthResponse,
+  ForgotPasswordResponse,
   ChatbotResponse,
   ChatHistoryMessage,
   ChatHistoryState,
@@ -22,7 +23,7 @@ import {
   ReportePorCategoria,
   Usuario,
 } from '@/types';
-import { getBackendToken, clearBackendToken } from '@/lib/session';
+import { clearBackendSession, getBackendToken } from '@/lib/session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -81,9 +82,8 @@ class ApiClient {
       },
       (error: AxiosError) => {
         if (error.response) {
-          // Manejar error 401 - Sesión expirada
           if (error.response.status === 401) {
-            clearBackendToken();
+            clearBackendSession();
             emitSessionExpired();
           }
 
@@ -120,6 +120,11 @@ class ApiClient {
 
   async register(username: string, email: string, password: string): Promise<AuthResponse> {
     const response = await this.client.post('/api/auth/register', { username, email, password });
+    return response.data;
+  }
+
+  async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+    const response = await this.client.post('/api/auth/forgot-password', { email });
     return response.data;
   }
 

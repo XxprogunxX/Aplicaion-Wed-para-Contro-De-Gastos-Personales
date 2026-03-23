@@ -7,43 +7,126 @@ import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useApi } from '@/hooks/useApi';
 import type { ApiError, AuthResponse } from '@/types';
-import { setBackendToken } from '@/lib/session';
+import { setBackendSession } from '@/lib/session';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Loading from '@/components/ui/Loading';
+
+type RegisterFieldErrors = {
+  name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getSafeRegisterErrorMessage(message: string): string {
+  const normalized = String(message || '').trim().toLowerCase();
+
+  if (!normalized) {
+    return 'No se pudo crear la cuenta. Intenta nuevamente.';
+  }
+
+  if (normalized.includes('ya existe un usuario con ese email')) {
+    return 'Ya existe una cuenta con ese correo electrónico.';
+  }
+
+  if (normalized.includes('formato de email inválido')) {
+    return 'Ingresa un correo electrónico válido.';
+  }
+
+  if (normalized.includes('debe tener al menos 6 caracteres')) {
+    return 'La contraseña debe tener al menos 6 caracteres.';
+  }
+
+  return 'No se pudo crear la cuenta. Verifica tus datos e intenta nuevamente.';
+}
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [liveMessage, setLiveMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<RegisterFieldErrors>({});
+  const [formError, setFormError] = useState('');
   const { loading, error, execute } = useApi<AuthResponse>();
   const router = useRouter();
+
+  const validateFields = (
+    nameValue: string,
+    emailValue: string,
+    passwordValue: string,
+    confirmPasswordValue: string
+  ): RegisterFieldErrors => {
+    const nextErrors: RegisterFieldErrors = {};
+    const normalizedName = String(nameValue || '').trim();
+    const normalizedEmail = String(emailValue || '').trim();
+
+    if (!normalizedName) {
+      nextErrors.name = 'El nombre es obligatorio';
+    } else if (normalizedName.length < 2) {
+      nextErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    }
+
+    if (!normalizedEmail) {
+      nextErrors.email = 'El correo electrónico es obligatorio';
+    } else if (!isValidEmail(normalizedEmail)) {
+      nextErrors.email = 'Ingresa un correo electrónico válido';
+    }
+
+    if (!String(passwordValue || '').trim()) {
+      nextErrors.password = 'La contraseña es obligatoria';
+    } else if (String(passwordValue).length < 6) {
+      nextErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    }
+
+    if (!String(confirmPasswordValue || '').trim()) {
+      nextErrors.confirmPassword = 'Confirma tu contraseña';
+    } else if (passwordValue !== confirmPasswordValue) {
+      nextErrors.confirmPassword = 'Las contraseñas no coinciden';
+    }
+
+    return nextErrors;
+  };
+
+  const validateSingleField = (field: keyof RegisterFieldErrors) => {
+    const nextErrors = validateFields(name, email, password, confirmPassword);
+    setFieldErrors((previous) => ({
+      ...previous,
+      [field]: nextErrors[field],
+    }));
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!name || !email || !password || !confirmPassword) {
-      setLiveMessage('Por favor completa todos los campos');
+    const nextErrors = validateFields(name, email, password, confirmPassword);
+    if (
+      nextErrors.name ||
+      nextErrors.email ||
+      nextErrors.password ||
+      nextErrors.confirmPassword
+    ) {
+      setFieldErrors(nextErrors);
+      setFormError('Corrige los campos marcados para crear tu cuenta.');
       return;
     }
 
-    if (password !== confirmPassword) {
-      setLiveMessage('Las contraseñas no coinciden');
-      return;
-    }
+    setFieldErrors({});
+    setFormError('');
 
     try {
-      const response = await execute(() => api.register(name, email, password), {
+      const response = await execute(() => api.register(name.trim(), email.trim(), password), {
         successMessage: '✓ Cuenta creada exitosamente',
       });
-      setBackendToken(response.token);
-      setLiveMessage('Cuenta creada exitosamente');
+      setBackendSession({ token: response.token, user: response.user });
       router.push('/');
     } catch (err) {
       const apiError = err as ApiError;
-      setLiveMessage(apiError.message || 'Ocurrió un error al crear la cuenta');
+      setFormError(getSafeRegisterErrorMessage(apiError.message));
     }
   };
 
@@ -88,8 +171,7 @@ export default function RegisterPage() {
               )}
               <div aria-live="polite" role="status" className="sr-only">
                 {loading && 'Creando cuenta...'}
-                {!loading && error && (error.message || 'Ocurrió un error al crear la cuenta')}
-                {!loading && !error && liveMessage}
+                {!loading && (formError || error?.message || '')}
               </div>
               <Input
                 id="name"
@@ -98,8 +180,15 @@ export default function RegisterPage() {
                 required
                 label="Nombre"
                 placeholder="Tu nombre"
+                autoComplete="name"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setFieldErrors((previous) => ({ ...previous, name: undefined }));
+                  setFormError('');
+                }}
+                onBlur={() => validateSingleField('name')}
+                error={fieldErrors.name}
               />
               <Input
                 id="email"
@@ -108,8 +197,15 @@ export default function RegisterPage() {
                 required
                 label="Correo electrónico"
                 placeholder="correo@ejemplo.com"
+                autoComplete="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setFieldErrors((previous) => ({ ...previous, email: undefined }));
+                  setFormError('');
+                }}
+                onBlur={() => validateSingleField('email')}
+                error={fieldErrors.email}
               />
               <Input
                 id="password"
@@ -118,8 +214,19 @@ export default function RegisterPage() {
                 required
                 label="Contraseña"
                 placeholder="********"
+                autoComplete="new-password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setFieldErrors((previous) => ({
+                    ...previous,
+                    password: undefined,
+                    confirmPassword: undefined,
+                  }));
+                  setFormError('');
+                }}
+                onBlur={() => validateSingleField('password')}
+                error={fieldErrors.password}
               />
               <Input
                 id="confirm-password"
@@ -128,9 +235,22 @@ export default function RegisterPage() {
                 required
                 label="Confirmar contraseña"
                 placeholder="********"
+                autoComplete="new-password"
                 value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value);
+                  setFieldErrors((previous) => ({ ...previous, confirmPassword: undefined }));
+                  setFormError('');
+                }}
+                onBlur={() => validateSingleField('confirmPassword')}
+                error={fieldErrors.confirmPassword}
               />
+
+              {(formError || error?.message) && (
+                <p role="alert" className="font-inter text-ds-secondary text-error">
+                  {formError || error?.message}
+                </p>
+              )}
 
               <Button type="submit" disabled={loading} className="w-full rounded-theme-sm">
                 {loading ? 'Creando cuenta...' : 'Registrarme'}

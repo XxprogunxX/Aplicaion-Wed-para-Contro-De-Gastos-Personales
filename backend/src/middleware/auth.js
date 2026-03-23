@@ -4,9 +4,12 @@
  */
 const jwt = require('jsonwebtoken');
 
-const LEGACY_DEMO_TOKEN = 'token-valido';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
-const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
+const DEFAULT_ROLE = 'user';
+
+function normalizeRole(value) {
+  return String(value || '').trim().toLowerCase() === 'admin' ? 'admin' : DEFAULT_ROLE;
+}
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -30,16 +33,6 @@ function authMiddleware(req, res, next) {
     });
   }
 
-  // Compatibilidad temporal para tests antiguos y modo demo.
-  if (token === LEGACY_DEMO_TOKEN) {
-    req.user = {
-      id: DEMO_USER_ID,
-      email: 'demo@gastos.app',
-      username: 'Usuario Demo',
-    };
-    return next();
-  }
-
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     const rawUserId = payload?.id ?? payload?.sub;
@@ -54,6 +47,7 @@ function authMiddleware(req, res, next) {
       id: parsedUserId,
       email: payload?.email,
       username: payload?.username,
+      role: normalizeRole(payload?.role),
     };
 
     return next();
@@ -68,15 +62,3 @@ function authMiddleware(req, res, next) {
 }
 
 module.exports = authMiddleware;
-
-
-// TODO: Implementar validación con JWT real en producción
-
-// validateRequest(schema)
-// - Validar datos de entrada con Joi o similar
-// - Retornar 400 si datos inválidos
-
-// errorHandler
-// - Capturar errores
-// - Formatear respuesta de error
-// - Incluir stack trace solo en desarrollo

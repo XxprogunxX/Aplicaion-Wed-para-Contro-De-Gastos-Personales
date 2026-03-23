@@ -1,9 +1,12 @@
 // Tipos para el modelo de datos
 
+export type UserRole = 'admin' | 'user';
+
 export interface Usuario {
   id: string | number;
   username: string;
   email: string;
+  role: UserRole;
   createdAt: string;
 }
 
@@ -107,6 +110,10 @@ export interface AuthResponse {
   success?: boolean;
   token: string;
   user: Usuario;
+}
+
+export interface ForgotPasswordResponse {
+  sent: boolean;
 }
 
 export interface ApiResponse<T> {

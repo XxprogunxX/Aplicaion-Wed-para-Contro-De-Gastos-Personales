@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { buildAuthHeader } = require('./helpers/authToken');
 
 jest.mock('../src/services/geminiService', () => ({
   generateChatbotReply: jest.fn().mockResolvedValue({
@@ -34,7 +35,7 @@ describe('Chat route', () => {
   it('POST /api/chat responde mensaje del asistente', async () => {
     const response = await request(app)
       .post('/api/chat')
-      .set('Authorization', 'Bearer token-valido')
+      .set('Authorization', buildAuthHeader())
       .send({ message: 'Como puedo ahorrar mas este mes?' });
 
     expect(response.status).toBe(200);
@@ -55,6 +56,7 @@ describe('Chat route', () => {
         id: '00000000-0000-0000-0000-000000000001',
         email: 'demo@gastos.app',
         username: 'Usuario Demo',
+        role: 'user',
       },
     });
 
@@ -74,7 +76,7 @@ describe('Chat route', () => {
   it('POST /api/chat valida message requerido', async () => {
     const response = await request(app)
       .post('/api/chat')
-      .set('Authorization', 'Bearer token-valido')
+      .set('Authorization', buildAuthHeader())
       .send({ message: '  ' });
 
     expect(response.status).toBe(400);
@@ -88,7 +90,7 @@ describe('Chat route', () => {
   it('POST /api/chat permite confirmar accion pendiente sin mensaje', async () => {
     const response = await request(app)
       .post('/api/chat')
-      .set('Authorization', 'Bearer token-valido')
+      .set('Authorization', buildAuthHeader())
       .send({
         pendingActionId: 'accion-demo-1',
         actionDecision: 'confirm',
@@ -104,6 +106,7 @@ describe('Chat route', () => {
         id: '00000000-0000-0000-0000-000000000001',
         email: 'demo@gastos.app',
         username: 'Usuario Demo',
+        role: 'user',
       },
     });
 
@@ -143,7 +146,7 @@ describe('Chat route', () => {
 
     const response = await request(app)
       .get('/api/chat/history')
-      .set('Authorization', 'Bearer token-valido');
+      .set('Authorization', buildAuthHeader());
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
