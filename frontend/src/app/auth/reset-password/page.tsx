@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient, hasSupabaseEnv } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Loading from '@/components/ui/Loading';
@@ -89,6 +89,14 @@ export default function ResetPasswordPage() {
 
     const initializeRecovery = async () => {
       try {
+        if (!hasSupabaseEnv()) {
+          if (!isCancelled) {
+            setFormError('Falta configuración de autenticación. Intenta más tarde.');
+          }
+          return;
+        }
+
+        const supabase = getSupabaseClient();
         const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         const queryParams = new URLSearchParams(window.location.search);
 
@@ -200,6 +208,13 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!hasSupabaseEnv()) {
+      setFormError('Falta configuración de autenticación. Intenta más tarde.');
+      return;
+    }
+
+    const supabase = getSupabaseClient();
 
     if (!recoveryReady) {
       setFormError('El enlace de recuperación es inválido o expiró. Solicita uno nuevo.');
