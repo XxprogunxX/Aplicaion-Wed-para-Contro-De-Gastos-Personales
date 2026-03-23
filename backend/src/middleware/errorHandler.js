@@ -4,7 +4,7 @@
  * 
  * Debe ser registrado al final de la aplicación, después de todas las rutas
  */
-function errorHandler(err, req, res, next) {
+function errorHandler(err, req, res, _next) {
   // Loguear error en consola para debugging
   console.error(err);
 

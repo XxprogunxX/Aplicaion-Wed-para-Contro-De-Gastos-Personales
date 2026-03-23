@@ -5,7 +5,7 @@ export default [
       'node_modules',
       'dist',
       'build',
-      'eslint.config.js'
+      'eslint.config.mjs',
     ],
     languageOptions: {
       ecmaVersion: 2021,
@@ -16,15 +16,30 @@ export default [
         module: 'readonly',
         console: 'readonly',
         __dirname: 'readonly',
-        exports: 'readonly'
-      }
+        exports: 'readonly',
+      },
     },
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
-      // En backend permitir logs
-      'no-console': 'off'
-    }
+      'no-console': 'off',
+    },
+  },
+  {
+    files: ['**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-console': 'off',
+    },
   },
   {
     files: ['tests/**/*.js'],
@@ -37,8 +52,8 @@ export default [
         beforeEach: 'readonly',
         afterEach: 'readonly',
         beforeAll: 'readonly',
-        afterAll: 'readonly'
-      }
-    }
-  }
+        afterAll: 'readonly',
+      },
+    },
+  },
 ];
