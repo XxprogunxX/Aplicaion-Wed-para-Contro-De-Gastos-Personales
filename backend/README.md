@@ -29,6 +29,8 @@ Crear un archivo `.env` en la raíz del backend con:
 PORT=3000
 JWT_SECRET=tu_clave_secreta_aqui
 NODE_ENV=development
+CORS_ORIGIN=http://localhost:3001,http://localhost:3000
+PASSWORD_RESET_REDIRECT_URL=http://localhost:3001/auth/reset-password
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 SUPABASE_PUBLISHABLE_KEY=your_publishable_or_anon_key
@@ -86,6 +88,9 @@ backend/
 ### Autenticación
 - `POST /api/auth/register` - Registrar nuevo usuario
 - `POST /api/auth/login` - Iniciar sesión
+- `POST /api/auth/forgot-password` - Solicitar recuperación de contraseña
+
+Las rutas protegidas (`/api/gastos`, `/api/categorias`, `/api/presupuestos`, `/api/reportes`, `/api/chat`) requieren header `Authorization: Bearer <jwt>` con un token emitido por `POST /api/auth/login`.
 
 ### Gastos
 - `GET /api/gastos` - Obtener todos los gastos del usuario

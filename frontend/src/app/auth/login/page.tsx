@@ -6,28 +6,102 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useApi } from '@/hooks/useApi';
-import { AuthResponse } from '@/types';
-import { setBackendToken } from '@/lib/session';
+import type { ApiError, AuthResponse } from '@/types';
+import { setBackendSession } from '@/lib/session';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Loading from '@/components/ui/Loading';
 
+type LoginFieldErrors = {
+  email?: string;
+  password?: string;
+};
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getSafeLoginErrorMessage(message: string): string {
+  const normalized = String(message || '').trim().toLowerCase();
+
+  if (!normalized) {
+    return 'No se pudo iniciar sesión. Intenta nuevamente.';
+  }
+
+  if (normalized.includes('credenciales inválidas')) {
+    return 'Credenciales inválidas. Verifica correo y contraseña.';
+  }
+
+  if (normalized.includes('email y password son requeridos')) {
+    return 'Completa correo y contraseña.';
+  }
+
+  return 'No se pudo iniciar sesión. Verifica tus datos e intenta nuevamente.';
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
+  const [formError, setFormError] = useState('');
   const { loading, error, execute } = useApi<AuthResponse>();
   const router = useRouter();
 
+  const validateFields = (emailValue: string, passwordValue: string): LoginFieldErrors => {
+    const nextErrors: LoginFieldErrors = {};
+    const normalizedEmail = String(emailValue || '').trim();
+
+    if (!normalizedEmail) {
+      nextErrors.email = 'El correo electrónico es obligatorio';
+    } else if (!isValidEmail(normalizedEmail)) {
+      nextErrors.email = 'Ingresa un correo electrónico válido';
+    }
+
+    if (!String(passwordValue || '').trim()) {
+      nextErrors.password = 'La contraseña es obligatoria';
+    }
+
+    return nextErrors;
+  };
+
+  const handleEmailBlur = () => {
+    const nextErrors = validateFields(email, password);
+    setFieldErrors((previous) => ({
+      ...previous,
+      email: nextErrors.email,
+    }));
+  };
+
+  const handlePasswordBlur = () => {
+    const nextErrors = validateFields(email, password);
+    setFieldErrors((previous) => ({
+      ...previous,
+      password: nextErrors.password,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const nextErrors = validateFields(email, password);
+    if (nextErrors.email || nextErrors.password) {
+      setFieldErrors(nextErrors);
+      setFormError('Corrige los campos marcados para iniciar sesión.');
+      return;
+    }
+
+    setFieldErrors({});
+    setFormError('');
+
     try {
-      const response = await execute(() => api.login(email, password), {
+      const response = await execute(() => api.login(email.trim(), password), {
         successMessage: '✓ Sesión iniciada correctamente',
       });
-      setBackendToken(response.token);
+      setBackendSession({ token: response.token, user: response.user });
       router.push('/');
-    } catch {
-      // Error ya está manejado en el hook
+    } catch (err) {
+      const apiError = err as ApiError;
+      setFormError(getSafeLoginErrorMessage(apiError.message));
     }
   };
 
@@ -72,7 +146,7 @@ export default function LoginPage() {
               )}
               <div aria-live="polite" role="status" className="sr-only">
                 {loading && 'Iniciando sesión...'}
-                {!loading && error && (error.message || 'Ocurrió un error al iniciar sesión')}
+                {!loading && (formError || error?.message || '')}
               </div>
               <Input
                 id="email"
@@ -81,8 +155,15 @@ export default function LoginPage() {
                 required
                 label="Correo electrónico"
                 placeholder="correo@ejemplo.com"
+                autoComplete="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setFieldErrors((previous) => ({ ...previous, email: undefined }));
+                  setFormError('');
+                }}
+                onBlur={handleEmailBlur}
+                error={fieldErrors.email}
               />
               <Input
                 id="password"
@@ -91,9 +172,22 @@ export default function LoginPage() {
                 required
                 label="Contraseña"
                 placeholder="********"
+                autoComplete="current-password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setFieldErrors((previous) => ({ ...previous, password: undefined }));
+                  setFormError('');
+                }}
+                onBlur={handlePasswordBlur}
+                error={fieldErrors.password}
               />
+
+              {(formError || error?.message) && (
+                <p role="alert" className="font-inter text-ds-secondary text-error">
+                  {formError || error?.message}
+                </p>
+              )}
 
               <div className="flex items-center justify-between text-ds-secondary">
                 <label className="font-inter flex items-center gap-2 text-text-secondary">
@@ -103,7 +197,7 @@ export default function LoginPage() {
                   />
                   Recordarme
                 </label>
-                <Link href="#" className="font-inter text-primary hover:text-primary-hover">
+                <Link href="/auth/forgot-password" className="font-inter text-primary hover:text-primary-hover">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>

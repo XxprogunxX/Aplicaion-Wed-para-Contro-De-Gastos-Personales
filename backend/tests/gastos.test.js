@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { buildAuthHeader } = require('./helpers/authToken');
 
 jest.mock('../src/controllers/gastosController', () => ({
   getAll: jest.fn((req, res) =>
@@ -29,7 +30,7 @@ describe('Gastos routes (mocked)', () => {
   it('GET /api/gastos responde datos mock', async () => {
     const response = await request(app)
       .get('/api/gastos')
-      .set('Authorization', 'Bearer token-valido');
+      .set('Authorization', buildAuthHeader());
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -51,7 +52,7 @@ describe('Gastos routes (mocked)', () => {
 
     const response = await request(app)
       .post('/api/gastos')
-      .set('Authorization', 'Bearer token-valido')
+      .set('Authorization', buildAuthHeader())
       .send(payload);
 
     expect(response.status).toBe(201);

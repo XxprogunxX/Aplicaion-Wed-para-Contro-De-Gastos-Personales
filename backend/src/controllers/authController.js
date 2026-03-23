@@ -6,6 +6,9 @@ const { supabase, isSupabaseConfigured } = require('../config/supabase');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
+const DEFAULT_ROLE = 'user';
+const PASSWORD_RECOVERY_SUCCESS_MESSAGE =
+	'Si el correo existe, recibirás instrucciones para restablecer tu contraseña';
 
 function getPublicSupabaseKey() {
 	return (
@@ -14,6 +17,10 @@ function getPublicSupabaseKey() {
 		process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
 		''
 	);
+}
+
+function getPasswordRecoveryRedirectUrl() {
+	return String(process.env.PASSWORD_RESET_REDIRECT_URL || '').trim();
 }
 
 function createUserScopedSupabaseClient(accessToken) {
@@ -50,10 +57,15 @@ const users = [
 		id: DEMO_USER_ID,
 		username: 'Usuario Demo',
 		email: 'demo@gastos.app',
+		role: DEFAULT_ROLE,
 		passwordHash: bcrypt.hashSync('123456', 10),
 		createdAt: new Date().toISOString(),
 	},
 ];
+
+function normalizeRole(value) {
+	return String(value || '').trim().toLowerCase() === 'admin' ? 'admin' : DEFAULT_ROLE;
+}
 
 function normalizeEmail(value) {
 	return String(value || '').trim().toLowerCase();
@@ -68,6 +80,7 @@ function sanitizeUser(user) {
 		id: user.id,
 		username: user.username,
 		email: user.email,
+		role: normalizeRole(user?.role),
 		createdAt: user.createdAt,
 	};
 }
@@ -79,6 +92,7 @@ function issueToken(user) {
 			id: user.id,
 			email: user.email,
 			username: user.username,
+			role: normalizeRole(user?.role),
 		},
 		JWT_SECRET,
 		{ expiresIn: '12h' }
@@ -90,28 +104,35 @@ function findUserByEmail(email) {
 }
 
 function upsertLocalUser(user) {
+	const normalizedUser = {
+		...user,
+		role: normalizeRole(user?.role),
+	};
+
 	const existingIndex = users.findIndex((item) => String(item.id) === String(user.id));
 
 	if (existingIndex >= 0) {
 		users[existingIndex] = {
 			...users[existingIndex],
-			...user,
+			...normalizedUser,
 		};
 		return users[existingIndex];
 	}
 
-	users.push(user);
-	return user;
+	users.push(normalizedUser);
+	return normalizedUser;
 }
 
 function toLocalUserFromSupabase(supabaseUser, fallbackUsername) {
 	const metadataUsername = supabaseUser?.user_metadata?.username;
+	const metadataRole = supabaseUser?.user_metadata?.role;
 	const inferredUsername = metadataUsername || fallbackUsername || 'Usuario';
 
 	return {
 		id: supabaseUser.id,
 		username: inferredUsername,
 		email: normalizeEmail(supabaseUser.email),
+		role: normalizeRole(metadataRole),
 		passwordHash: '',
 		createdAt: supabaseUser.created_at || new Date().toISOString(),
 	};
@@ -235,14 +256,20 @@ async function register(req, res) {
 					email: normalizedEmail,
 					password: String(password),
 					email_confirm: true,
-					user_metadata: { username: safeUsername },
+					user_metadata: {
+						username: safeUsername,
+						role: DEFAULT_ROLE,
+					},
 				});
 			} else {
 				authResult = await supabase.auth.signUp({
 					email: normalizedEmail,
 					password: String(password),
 					options: {
-						data: { username: safeUsername },
+						data: {
+							username: safeUsername,
+							role: DEFAULT_ROLE,
+						},
 					},
 				});
 			}
@@ -300,6 +327,7 @@ async function register(req, res) {
 			id: randomUUID(),
 			username: safeUsername,
 			email: normalizedEmail,
+			role: DEFAULT_ROLE,
 			passwordHash: bcrypt.hashSync(String(password), 10),
 			createdAt: new Date().toISOString(),
 		};
@@ -399,6 +427,55 @@ async function login(req, res) {
 	}
 }
 
+async function forgotPassword(req, res) {
+	try {
+		const { email } = req.body || {};
+		const normalizedEmail = normalizeEmail(email);
+
+		if (!normalizedEmail) {
+			return res.status(400).json({
+				error: true,
+				message: 'email es requerido',
+				status: 400,
+			});
+		}
+
+		if (!isValidEmail(normalizedEmail)) {
+			return res.status(400).json({
+				error: true,
+				message: 'Formato de email inválido',
+				status: 400,
+			});
+		}
+
+		if (isSupabaseConfigured && supabase?.auth?.resetPasswordForEmail) {
+			const redirectTo = getPasswordRecoveryRedirectUrl();
+			const options = redirectTo ? { redirectTo } : undefined;
+
+			try {
+				const resetResult = await supabase.auth.resetPasswordForEmail(normalizedEmail, options);
+				if (resetResult?.error) {
+					console.warn('No se pudo enviar email de recuperación:', resetResult.error.message);
+				}
+			} catch (error) {
+				console.warn('Error al solicitar recuperación de contraseña:', error?.message || error);
+			}
+		}
+
+		return res.json({
+			error: false,
+			message: PASSWORD_RECOVERY_SUCCESS_MESSAGE,
+			data: { sent: true },
+		});
+	} catch {
+		return res.json({
+			error: false,
+			message: PASSWORD_RECOVERY_SUCCESS_MESSAGE,
+			data: { sent: true },
+		});
+	}
+}
+
 function logout(_req, res) {
 	return res.json({
 		error: false,
@@ -419,6 +496,7 @@ function getProfile(req, res) {
 				id: String(req.user?.id || ''),
 				username: req.user?.username || 'Usuario',
 				email: req.user?.email || '',
+				role: normalizeRole(req.user?.role),
 				createdAt: new Date().toISOString(),
 			},
 		});
@@ -434,6 +512,7 @@ function getProfile(req, res) {
 module.exports = {
 	register,
 	login,
+	forgotPassword,
 	logout,
 	getProfile,
 };
