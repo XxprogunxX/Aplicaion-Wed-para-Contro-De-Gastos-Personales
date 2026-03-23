@@ -38,7 +38,9 @@ export default function RegisterPage() {
       const response = await execute(() => api.register(name, email, password), {
         successMessage: '✓ Cuenta creada exitosamente',
       });
-      setBackendToken(response.token);
+      if (response.token) {
+        setBackendToken(response.token);
+      }
       setLiveMessage('Cuenta creada exitosamente');
       router.push('/');
     } catch (err) {

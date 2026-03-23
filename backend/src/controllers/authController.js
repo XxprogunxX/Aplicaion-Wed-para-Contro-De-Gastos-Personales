@@ -1,10 +1,10 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { randomUUID } = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { supabase, isSupabaseConfigured } = require('../config/supabase');
+const { createAuthSession, clearSessionCookie } = require('../lib/authSession');
+const { getClientIp } = require('../middleware/rateLimit');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 function getPublicSupabaseKey() {
@@ -72,21 +72,17 @@ function sanitizeUser(user) {
 	};
 }
 
-function issueToken(user) {
-	return jwt.sign(
-		{
-			sub: String(user.id),
-			id: user.id,
-			email: user.email,
-			username: user.username,
-		},
-		JWT_SECRET,
-		{ expiresIn: '12h' }
-	);
+function shouldReturnTokenInBody() {
+	return String(process.env.AUTH_RETURN_TOKEN_BODY || 'true').toLowerCase() !== 'false';
 }
 
-function findUserByEmail(email) {
-	return users.find((item) => item.email === email);
+function deviceInfoFromRequest(req) {
+	const fromBody = req.body?.device_info;
+	if (fromBody && String(fromBody).trim()) {
+		return String(fromBody).trim().slice(0, 2048);
+	}
+	const ua = req.headers['user-agent'];
+	return ua ? String(ua).slice(0, 2048) : '';
 }
 
 function upsertLocalUser(user) {
@@ -277,14 +273,35 @@ async function register(req, res) {
 				accessToken: authResult.data?.session?.access_token,
 			});
 
-			return res.status(201).json({
+			const sessionResult = await createAuthSession(res, {
+				userId: localUser.id,
+				email: localUser.email,
+				username: localUser.username,
+				deviceInfo: deviceInfoFromRequest(req),
+				ipAddress: getClientIp(req),
+			});
+
+			if (sessionResult.error || !sessionResult.token) {
+				clearSessionCookie(res);
+				return res.status(503).json({
+					error: true,
+					message: 'Usuario creado pero no se pudo abrir sesión',
+					status: 503,
+				});
+			}
+
+			const regPayload = {
 				error: false,
 				message: 'Usuario registrado correctamente',
 				data: {
-					token: issueToken(localUser),
 					user: sanitizeUser(localUser),
 				},
-			});
+			};
+			if (shouldReturnTokenInBody()) {
+				regPayload.data.token = sessionResult.token;
+			}
+
+			return res.status(201).json(regPayload);
 		}
 
 		const alreadyExists = users.some((user) => user.email === normalizedEmail);
@@ -306,14 +323,35 @@ async function register(req, res) {
 
 		users.push(newUser);
 
-		return res.status(201).json({
+		const sessionResult = await createAuthSession(res, {
+			userId: newUser.id,
+			email: newUser.email,
+			username: newUser.username,
+			deviceInfo: deviceInfoFromRequest(req),
+			ipAddress: getClientIp(req),
+		});
+
+		if (sessionResult.error || !sessionResult.token) {
+			clearSessionCookie(res);
+			return res.status(503).json({
+				error: true,
+				message: 'Usuario creado pero no se pudo abrir sesión',
+				status: 503,
+			});
+		}
+
+		const regPayloadLocal = {
 			error: false,
 			message: 'Usuario registrado correctamente',
 			data: {
-				token: issueToken(newUser),
 				user: sanitizeUser(newUser),
 			},
-		});
+		};
+		if (shouldReturnTokenInBody()) {
+			regPayloadLocal.data.token = sessionResult.token;
+		}
+
+		return res.status(201).json(regPayloadLocal);
 	} catch (error) {
 		if (Number(error?.status) === 409) {
 			return res.status(409).json({
@@ -329,82 +367,6 @@ async function register(req, res) {
 			status: 500,
 		});
 	}
-}
-
-async function login(req, res) {
-	try {
-		const { email, password } = req.body || {};
-		const normalizedEmail = normalizeEmail(email);
-
-		if (!normalizedEmail || !password) {
-			return res.status(400).json({
-				error: true,
-				message: 'email y password son requeridos',
-				status: 400,
-			});
-		}
-
-		if (isSupabaseConfigured) {
-			const authResult = await supabase.auth.signInWithPassword({
-				email: normalizedEmail,
-				password: String(password),
-			});
-
-			if (!authResult.error && authResult.data?.user) {
-				const localUser = upsertLocalUser(
-					toLocalUserFromSupabase(authResult.data.user, normalizedEmail.split('@')[0])
-				);
-				await ensureUsuarioProfile(localUser, String(password), {
-					accessToken: authResult.data?.session?.access_token,
-				});
-
-				return res.json({
-					error: false,
-					message: 'Inicio de sesión correcto',
-					data: {
-						token: issueToken(localUser),
-						user: sanitizeUser(localUser),
-					},
-				});
-			}
-		}
-
-		const user = findUserByEmail(normalizedEmail);
-		const validPassword = user?.passwordHash
-			? bcrypt.compareSync(String(password), user.passwordHash)
-			: false;
-
-		if (!user || !validPassword) {
-			return res.status(401).json({
-				error: true,
-				message: 'Credenciales inválidas',
-				status: 401,
-			});
-		}
-
-		return res.json({
-			error: false,
-			message: 'Inicio de sesión correcto',
-			data: {
-				token: issueToken(user),
-				user: sanitizeUser(user),
-			},
-		});
-	} catch (error) {
-		return res.status(500).json({
-			error: true,
-			message: error?.message || 'Error interno al iniciar sesión',
-			status: 500,
-		});
-	}
-}
-
-function logout(_req, res) {
-	return res.json({
-		error: false,
-		message: 'Sesión cerrada correctamente',
-		data: { success: true },
-	});
 }
 
 function getProfile(req, res) {
@@ -433,7 +395,5 @@ function getProfile(req, res) {
 
 module.exports = {
 	register,
-	login,
-	logout,
 	getProfile,
 };

@@ -7,6 +7,20 @@
 - Lenguaje: JavaScript (ES6+)
 - Gestor de paquetes: npm
 
+## Documentación
+
+- [Autenticación, sesiones, JWT, Redis y rate limiting](docs/AUTENTICACION-Y-SESIONES.md)
+- [Pruebas QA y tests de sesión (integración real, CI, smoke)](docs/PRUEBAS-QA-Y-SESIONES.md)
+- [Resumen rápido QA en el repo](tests/qa/README.md)
+
+### Scripts de prueba
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm test` | Unitarios y rutas con mocks (excluye `tests/qa`). |
+| `npm run test:qa` | Integración real in-process: API + **sesiones** (`tests/qa/*.integration.test.js`). |
+| `npm run qa:smoke` | Smoke HTTP contra `QA_BASE_URL` (servidor en ejecución); incluye checks de JWT de sesión. Requiere Node 18+ (`fetch`). |
+
 ## Requisitos
 - Node.js v18 o superior
 - npm
@@ -108,15 +122,19 @@ backend/
 
 ## Docker
 
-### Construir imagen
+| Archivo | Uso |
+|---------|-----|
+| `Dockerfile` | **Producción**: `npm ci --omit=dev`, usuario `node`. Es el que construye **GitHub Actions**. |
+| `Dockerfile.dev` | **Desarrollo** con `docker compose` (nodemon, volúmenes). |
+
+### Producción
 ```bash
 docker build -t gastos-backend .
-```
-
-### Ejecutar contenedor
-```bash
 docker run -p 3000:3000 --env-file .env gastos-backend
 ```
+
+### Compose (raíz del monorepo)
+`docker compose` usa `Dockerfile.dev` para este servicio. Ver [README principal](../README.md#docker).
 
 ## Contribuir
 Ver [README.md](../README.md) principal para instrucciones de contribución.

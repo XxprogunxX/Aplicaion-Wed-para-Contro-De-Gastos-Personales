@@ -1,24 +1,49 @@
+# Desarrollo local con volúmenes (hot reload).
+# API en el host: http://localhost:3002  |  Frontend: http://localhost:3001
+#
+# Crea backend/.env y (opcional) frontend/.env.local antes de arrancar.
+# Si no tienes .env, copia desde .env.example en cada carpeta.
+
 services:
   backend:
     build:
       context: ./backend
-    container_name: backend_app
+      dockerfile: Dockerfile.dev
+    container_name: gastos-backend
     ports:
       - "3002:3000"
     environment:
-      - PORT=3000
+      NODE_ENV: development
+      PORT: "3000"
+      # Desde el navegador en el host, CORS debe permitir http://localhost:3001
+      CORS_ORIGIN: "http://localhost:3001"
     volumes:
       - ./backend:/app
-      - /app/node_modules
+      - backend_node_modules:/app/node_modules
+    command: npm run dev
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
-    container_name: frontend_app
+      dockerfile: Dockerfile.dev
+      args:
+        # URL del API vista desde el navegador en tu máquina (mapeo 3002 -> backend)
+        NEXT_PUBLIC_API_URL: http://localhost:3002
+    container_name: gastos-frontend
     ports:
       - "3001:3001"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3002
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - frontend_node_modules:/app/node_modules
+    command: npm run dev
+    depends_on:
+      - backend
     restart: unless-stopped
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:

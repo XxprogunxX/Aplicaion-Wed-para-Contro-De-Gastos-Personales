@@ -6,7 +6,7 @@
 
 Repositorio del proyecto para la **gestión y control de gastos personales**. Una aplicación fullstack moderna con backend API y frontend responsivo.
 
-El backend está implementado y expone una API REST funcional; el frontend cuenta con Dockerfile y package.json configurados, aunque la app aún está en construcción (el script de build es provisional).
+El backend expone una API REST; el frontend es Next.js 14 con build de producción verificado. Hay **Dockerfiles de producción** (`Dockerfile`) y **de desarrollo** (`Dockerfile.dev`) más `docker-compose.yml` para levantar ambos servicios.
 
 ## Estructura del repositorio
 
@@ -58,38 +58,19 @@ El backend está implementado y expone una API REST funcional; el frontend cuent
 - Control de versiones: Git
 - CI/CD: GitHub Actions
 
-## CI/CD Pipeline
+## CI/CD (GitHub Actions)
 
-Este proyecto incluye pipelines automáticos de **Integración Continua** configurados con GitHub Actions:
+Workflows en `.github/workflows/`:
 
-### Workflows disponibles
+| Workflow | Cuándo | Qué hace |
+|----------|--------|----------|
+| **backend-ci.yml** | Push/PR a `main`, `master`, `develop` (y ramas `features/*`) si cambia `backend/**` | Node **20**, `npm ci`, `lint`, `test`, build Docker con `backend/Dockerfile` |
+| **frontend-ci.yml** | Igual si cambia `frontend/**` | Node **20**, `lint`, `test`, `type-check`, `build`, `bundle:check`, Lighthouse (no bloquea el job si falla), build Docker con `frontend/Dockerfile` y `NEXT_PUBLIC_API_URL` |
+| **node.yml** | Solo manual (`workflow_dispatch`) | Placeholder legado |
 
-1. **node.yml** - Pipeline general
-   - Se ejecuta en: Push y Pull Request a `master`
-   - Acciones: Instala dependencias y ejecuta tests
+También puedes lanzar **backend-ci** y **frontend-ci** a mano desde la pestaña **Actions** → *Run workflow*.
 
-2. **backend-ci.yml** - Pipeline del backend
-   - Se ejecuta en: Push y Pull Request a `master` y `develop` cuando hay cambios en `/backend`
-   - Matriz de pruebas: Node 18.x y 20.x
-   - Acciones:
-     - Instala dependencias (`npm ci`)
-     - Ejecuta linter (`npm run lint`)
-     - Ejecuta tests (`npm test`)
-     - Construye imagen Docker
-
-3. **frontend-ci.yml** - Pipeline del frontend
-   - Se ejecuta en: Push y Pull Request a `master` y `develop` cuando hay cambios en `/frontend`
-   - Matriz de pruebas: Node 18.x y 20.x
-   - Acciones:
-     - Instala dependencias (`npm ci`)
-     - Ejecuta linter (`npm run lint`)
-     - Verifica tipos TypeScript (`npm run type-check`)
-     - Construye el proyecto (`npm run build`)
-     - Construye imagen Docker
-
-### Estado de los Workflows
-
-Los workflows se configuran automáticamente en GitHub cuando haces push a las ramas configuradas. Puedes ver el estado de los pipelines en la pestaña **Actions** de tu repositorio.
+El estado aparece en **Actions** del repositorio y en los badges del encabezado de este README (ajusta la URL del repo en el badge si haces fork).
 
 
 
@@ -146,34 +127,34 @@ NODE_ENV=development
 CORS_ORIGIN=http://localhost:3001
 ```
 
-## Ejecutar con Docker
+## Docker
 
-### Construir y ejecutar el backend
-```bash
-cd backend
-docker build -t gastos-backend .
-docker run -p 3000:3000 --env-file .env gastos-backend
-```
+### Producción (imagen mínima)
 
-### Construir y ejecutar el frontend
-```bash
-cd frontend
-docker build -t gastos-frontend .
-docker run -p 3001:3001 gastos-frontales
-JWT_SECRET=tu_clave_secreta_aqui
-NODE_ENV=development
-```
-
-## Ejecutar con Docker
+- **Backend:** `backend/Dockerfile` — `npm ci --omit=dev`, `node src/index.js`, puerto **3000**.
+- **Frontend:** `frontend/Dockerfile` — `next build`, usuario no root, puerto **3001**.
 
 ```bash
-# Construir la imagen
-cd backend
-docker build -t gastos-backend .
+# Backend
+cd backend && docker build -t gastos-backend . && docker run -p 3000:3000 --env-file .env gastos-backend
 
-# Ejecutar el contenedor
-docker run -p 3000:3000 --env-file .env gastos-backend
+# Frontend (define la URL pública del API en build)
+cd frontend && docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:3000 -t gastos-frontend . \
+  && docker run -p 3001:3001 -e NEXT_PUBLIC_API_URL=http://localhost:3000 gastos-frontend
 ```
+
+### Desarrollo con docker-compose (hot reload)
+
+Usa `Dockerfile.dev` en cada servicio (incluye devDependencies y `npm run dev`):
+
+```bash
+# Desde la raíz del repo
+docker compose up --build
+```
+
+- API: `http://localhost:3002` (mapeo al contenedor 3000).
+- Frontend: `http://localhost:3001`.
+- Crea `backend/.env` (puedes partir de `backend/.env.example`) y ajusta `CORS_ORIGIN` si cambias el origen del front.
 
 ## Contribuir
 1. Crear una rama para tu feature: `git checkout -b feature/nueva-funcionalidad`

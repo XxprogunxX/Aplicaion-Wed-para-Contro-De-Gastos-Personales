@@ -105,7 +105,8 @@ export interface ApiMessageResponse {
 
 export interface AuthResponse {
   success?: boolean;
-  token: string;
+  /** Presente si el backend envía JWT en el cuerpo (`AUTH_RETURN_TOKEN_BODY`); la cookie HttpOnly funciona sin esto. */
+  token?: string;
   user: Usuario;
 }
 

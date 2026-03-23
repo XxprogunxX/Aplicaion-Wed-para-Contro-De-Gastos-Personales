@@ -1,0 +1,16 @@
+# Desarrollo (docker-compose con volúmenes): next dev con todas las dependencias
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci && npm cache clean --force
+
+COPY . .
+
+ARG NEXT_PUBLIC_API_URL=http://localhost:3000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+EXPOSE 3001
+
+CMD ["npm", "run", "dev"]

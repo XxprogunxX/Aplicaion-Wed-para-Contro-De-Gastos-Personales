@@ -24,7 +24,9 @@ export default function LoginPage() {
       const response = await execute(() => api.login(email, password), {
         successMessage: '✓ Sesión iniciada correctamente',
       });
-      setBackendToken(response.token);
+      if (response.token) {
+        setBackendToken(response.token);
+      }
       router.push('/');
     } catch {
       // Error ya está manejado en el hook

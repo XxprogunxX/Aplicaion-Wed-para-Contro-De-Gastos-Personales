@@ -129,10 +129,18 @@ vercel deploy
 ```
 
 ### Docker
+
+| Archivo | Uso |
+|---------|-----|
+| `Dockerfile` | **Producción**: `next build`, `npm prune`, `next start` en **3001** (usuario `nextjs`). Usado en **CI**. |
+| `Dockerfile.dev` | **Desarrollo** con `docker compose` (`next dev` en **3001** con `-H 0.0.0.0`). |
+
 ```bash
-docker build -t gastos-frontend .
+docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:3000 -t gastos-frontend .
 docker run -p 3001:3001 gastos-frontend
 ```
+
+Compose: ver [README principal](../README.md#docker).
 
 ## Contribuir
 Ver [README.md](../README.md) principal para instrucciones de contribución.

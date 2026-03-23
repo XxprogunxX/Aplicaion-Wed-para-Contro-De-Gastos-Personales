@@ -4,12 +4,14 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Middlewares
 const errorHandler = require('./middleware/errorHandler');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const authMiddleware = require('./middleware/auth');
+const { apiRateLimitByIp } = require('./middleware/rateLimit');
 const { isSupabaseConfigured, supabaseKeyMode } = require('./config/supabase');
 
 // Rutas
@@ -21,6 +23,8 @@ const reportesRoutes = require('./routes/reportesRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 
 const PORT = process.env.PORT || 3000;
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
+
 const defaultCorsOrigins = ['http://localhost:3001'];
 const allowedOrigins = String(process.env.CORS_ORIGIN || '')
   .split(',')
@@ -38,12 +42,15 @@ app.use(
 
       return callback(new Error(`Origen no permitido por CORS: ${origin}`));
     },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(apiRateLimitByIp);
 
 // Ruta raíz para verificar que el servicio está activo
 app.get('/', (req, res) => {
