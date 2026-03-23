@@ -9,6 +9,7 @@ export function formatCurrency(amount: number, locale = 'es-MX', currency = 'MXN
 export const GASTOS_UPDATED_EVENT = 'gastos:updated';
 export const PRESUPUESTOS_UPDATED_EVENT = 'presupuestos:updated';
 export const CATEGORIAS_UPDATED_EVENT = 'categorias:updated';
+export const SESSION_EXPIRED_EVENT = 'session:expired';
 
 export function emitGastosUpdated() {
 	if (typeof window === 'undefined') {
@@ -16,6 +17,14 @@ export function emitGastosUpdated() {
 	}
 
 	window.dispatchEvent(new Event(GASTOS_UPDATED_EVENT));
+}
+
+export function emitSessionExpired() {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
 }
 
 export function emitPresupuestosUpdated() {

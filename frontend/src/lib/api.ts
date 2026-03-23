@@ -3,6 +3,7 @@ import {
   emitCategoriasUpdated,
   emitPresupuestosUpdated,
   emitGastosUpdated,
+  emitSessionExpired,
 } from '@/lib/utils';
 import {
   ApiError,
@@ -21,7 +22,7 @@ import {
   ReportePorCategoria,
   Usuario,
 } from '@/types';
-import { getBackendToken } from '@/lib/session';
+import { getBackendToken, clearBackendToken } from '@/lib/session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -80,6 +81,12 @@ class ApiClient {
       },
       (error: AxiosError) => {
         if (error.response) {
+          // Manejar error 401 - Sesión expirada
+          if (error.response.status === 401) {
+            clearBackendToken();
+            emitSessionExpired();
+          }
+
           const apiError: ApiError = {
             error: true,
             message: (error.response.data as any)?.message || 'Error desconocido',

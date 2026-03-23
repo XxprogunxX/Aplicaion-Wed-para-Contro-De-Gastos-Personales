@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { clearBackendToken } from '@/lib/session';
+import { SESSION_EXPIRED_EVENT } from '@/lib/utils';
 import type { Usuario } from '@/types';
 
 const navItems = [
@@ -21,6 +22,7 @@ export default function Navbar() {
 	const router = useRouter();
 	const [profile, setProfile] = useState<Usuario | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isSessionExpired, setIsSessionExpired] = useState(false);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -31,9 +33,10 @@ export default function Navbar() {
 				if (isMounted) {
 					setProfile(user);
 				}
-			} catch {
+			} catch (error) {
 				if (isMounted) {
 					setProfile(null);
+					// Si hay error 401, la sesión ya fue manejada por el interceptor
 				}
 			}
 		};
@@ -42,6 +45,19 @@ export default function Navbar() {
 
 		return () => {
 			isMounted = false;
+		};
+	}, []);
+
+	useEffect(() => {
+		const handleSessionExpired = () => {
+			setIsSessionExpired(true);
+			setProfile(null);
+		};
+
+		window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+
+		return () => {
+			window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
 		};
 	}, []);
 
@@ -96,7 +112,7 @@ export default function Navbar() {
 
 					<div className="ml-auto hidden items-center gap-4 lg:flex">
 						<p className="font-inter text-[12px] text-text-secondary" suppressHydrationWarning>
-							{profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
+							{isSessionExpired ? 'Sesión expirada' : profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
 						</p>
 						<button
 							type="button"
@@ -126,7 +142,7 @@ export default function Navbar() {
 				>
 					<div className="rounded-theme-md border border-border bg-background p-3">
 						<p className="font-inter text-[12px] text-text-secondary" suppressHydrationWarning>
-							{profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
+							{isSessionExpired ? 'Sesión expirada' : profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
 						</p>
 						<nav className="mt-3 grid grid-cols-2 gap-2" aria-label="Navegación principal móvil">
 							{navItems.map((item) => {
