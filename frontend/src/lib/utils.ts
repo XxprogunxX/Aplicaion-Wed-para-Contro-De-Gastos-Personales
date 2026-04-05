@@ -10,6 +10,7 @@ export const GASTOS_UPDATED_EVENT = 'gastos:updated';
 export const PRESUPUESTOS_UPDATED_EVENT = 'presupuestos:updated';
 export const CATEGORIAS_UPDATED_EVENT = 'categorias:updated';
 export const SESSION_EXPIRED_EVENT = 'session:expired';
+export const ACCESS_FORBIDDEN_EVENT = 'session:forbidden';
 
 export function emitGastosUpdated() {
 	if (typeof window === 'undefined') {
@@ -25,6 +26,14 @@ export function emitSessionExpired() {
 	}
 
 	window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+}
+
+export function emitAccessForbidden() {
+	if (typeof window === 'undefined') {
+		return;
+	}
+
+	window.dispatchEvent(new Event(ACCESS_FORBIDDEN_EVENT));
 }
 
 export function emitPresupuestosUpdated() {

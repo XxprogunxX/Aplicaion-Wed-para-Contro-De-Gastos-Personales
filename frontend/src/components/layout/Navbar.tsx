@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { clearBackendToken } from '@/lib/session';
+import { hasPermission } from '@/lib/accessControl';
+import { clearBackendToken, getBackendUserRole } from '@/lib/session';
 import { SESSION_EXPIRED_EVENT } from '@/lib/utils';
 import type { Usuario } from '@/types';
 
@@ -15,6 +16,7 @@ const navItems = [
 	{ href: '/historial', label: 'Historial' },
 	{ href: '/presupuestos', label: 'Presupuestos' },
 	{ href: '/reportes', label: 'Reportes' },
+	{ href: '/configuracion', label: 'Configuración', permission: 'settings:view' as const },
 ];
 
 export default function Navbar() {
@@ -23,6 +25,14 @@ export default function Navbar() {
 	const [profile, setProfile] = useState<Usuario | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isSessionExpired, setIsSessionExpired] = useState(false);
+	const currentRole = profile?.role || getBackendUserRole();
+	const visibleNavItems = navItems.filter((item) => {
+		if (!item.permission) {
+			return true;
+		}
+
+		return hasPermission(currentRole, item.permission);
+	});
 
 	useEffect(() => {
 		let isMounted = true;
@@ -92,7 +102,7 @@ export default function Navbar() {
 					</Link>
 
 					<nav className="hidden flex-1 items-center gap-2 lg:flex" aria-label="Navegación principal">
-						{navItems.map((item) => {
+						{visibleNavItems.map((item) => {
 							const isActive = pathname === item.href;
 							return (
 								<Link
@@ -145,7 +155,7 @@ export default function Navbar() {
 							{isSessionExpired ? 'Sesión expirada' : profile ? `Usuario: ${profile.username}` : 'Usuario: -'}
 						</p>
 						<nav className="mt-3 grid grid-cols-2 gap-2" aria-label="Navegación principal móvil">
-							{navItems.map((item) => {
+							{visibleNavItems.map((item) => {
 								const isActive = pathname === item.href;
 								return (
 									<Link

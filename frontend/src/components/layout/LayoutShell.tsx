@@ -6,20 +6,23 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatbotWidget from './ChatbotWidget';
 import { api } from '@/lib/api';
+import { canAccessRoute } from '@/lib/accessControl';
 import {
   BACKEND_SESSION_STORAGE_KEYS,
   clearBackendSession,
   getBackendSessionExpirationTimestamp,
-  hasBackendRole,
+  getBackendUserRole,
   recoverValidBackendSession,
   setBackendUser,
 } from '@/lib/session';
+import { ACCESS_FORBIDDEN_EVENT } from '@/lib/utils';
+import type { ApiError } from '@/types';
 
 interface LayoutShellProps {
   children: React.ReactNode;
 }
 
-const authPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
+const hideChromePaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
 const isChatbotEnabled = process.env.NEXT_PUBLIC_CHATBOT_ENABLED !== 'false';
 
 export default function LayoutShell({ children }: LayoutShellProps) {
@@ -28,8 +31,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   const [readyToRender, setReadyToRender] = useState(false);
   const [sessionSyncNonce, setSessionSyncNonce] = useState(0);
 
-  const isAuthPath = authPaths.includes(pathname);
-  const hideChrome = authPaths.includes(pathname);
+  const hideChrome = hideChromePaths.includes(pathname);
 
   useEffect(() => {
     const storageKeys = new Set<string>(BACKEND_SESSION_STORAGE_KEYS);
@@ -47,16 +49,32 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   }, []);
 
   useEffect(() => {
+    const handleAccessForbidden = () => {
+      const accessDecision = canAccessRoute(pathname, getBackendUserRole(), true);
+      if (accessDecision.reason === 'forbidden') {
+        setReadyToRender(false);
+        router.replace(accessDecision.redirectTo || '/acceso-denegado');
+      }
+    };
+
+    window.addEventListener(ACCESS_FORBIDDEN_EVENT, handleAccessForbidden);
+    return () => {
+      window.removeEventListener(ACCESS_FORBIDDEN_EVENT, handleAccessForbidden);
+    };
+  }, [pathname, router]);
+
+  useEffect(() => {
     let isCancelled = false;
 
     const syncAuthState = async () => {
       const activeSession = recoverValidBackendSession();
-      const hasToken = Boolean(activeSession?.token);
+      const hasSession = Boolean(activeSession?.token);
 
-      if (!hasToken) {
-        if (!isAuthPath) {
+      if (!hasSession) {
+        const accessDecision = canAccessRoute(pathname, null, false);
+        if (!accessDecision.allowed) {
           setReadyToRender(false);
-          router.replace('/auth/login');
+          router.replace(accessDecision.redirectTo || '/auth/login');
           return;
         }
 
@@ -74,17 +92,19 @@ export default function LayoutShell({ children }: LayoutShellProps) {
         }
 
         setBackendUser(profile);
+        const currentRole = getBackendUserRole();
 
-        if (!hasBackendRole(['admin', 'user'])) {
+        if (!currentRole) {
           clearBackendSession();
+          setReadyToRender(false);
+          router.replace('/auth/login');
+          return;
+        }
 
-          if (!isAuthPath) {
-            setReadyToRender(false);
-            router.replace('/auth/login');
-            return;
-          }
-
-          setReadyToRender(true);
+        const accessDecision = canAccessRoute(pathname, currentRole, true);
+        if (!accessDecision.allowed) {
+          setReadyToRender(false);
+          router.replace(accessDecision.redirectTo || '/');
           return;
         }
 
@@ -92,27 +112,24 @@ export default function LayoutShell({ children }: LayoutShellProps) {
           return;
         }
 
-        if (isAuthPath) {
+        setReadyToRender(true);
+      } catch (error) {
+        const apiError = error as ApiError;
+
+        if (apiError?.status === 403) {
           setReadyToRender(false);
-          router.replace('/');
+          router.replace('/acceso-denegado');
           return;
         }
 
-        setReadyToRender(true);
-      } catch {
         clearBackendSession();
 
         if (isCancelled) {
           return;
         }
 
-        if (!isAuthPath) {
-          setReadyToRender(false);
-          router.replace('/auth/login');
-          return;
-        }
-
-        setReadyToRender(true);
+        setReadyToRender(false);
+        router.replace('/auth/login');
       }
     };
 
@@ -121,10 +138,11 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     return () => {
       isCancelled = true;
     };
-  }, [isAuthPath, router, sessionSyncNonce]);
+  }, [pathname, router, sessionSyncNonce]);
 
   useEffect(() => {
-    if (isAuthPath) {
+    const activeSession = recoverValidBackendSession();
+    if (!activeSession?.token) {
       return;
     }
 
@@ -151,7 +169,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [isAuthPath, pathname, router, sessionSyncNonce]);
+  }, [pathname, router, sessionSyncNonce]);
 
   if (!readyToRender) {
     return null;

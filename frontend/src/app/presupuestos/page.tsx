@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import { hasPermission } from '@/lib/accessControl';
 import { ensureBackendToken } from '@/lib/session';
+import { getBackendUserRole } from '@/lib/session';
 import Button from '@/components/ui/Button';
 import Loading from '@/components/ui/Loading';
 import {
@@ -80,6 +82,8 @@ export default function PresupuestosPage() {
   const [saving, setSaving] = useState(false);
   const [savingCategoria, setSavingCategoria] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const userRole = getBackendUserRole();
+  const canManageCategories = hasPermission(userRole, 'categories:manage');
 
   const cargarEstado = useCallback(async () => {
     ensureBackendToken();
@@ -225,6 +229,11 @@ export default function PresupuestosPage() {
   const handleCreateCategoria = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!canManageCategories) {
+      setErrorMessage('No tienes permisos para crear categorías.');
+      return;
+    }
+
     const nombre = categoriaForm.nombre.trim();
     if (!nombre) {
       setErrorMessage('El nombre de la categoría es obligatorio.');
@@ -251,6 +260,11 @@ export default function PresupuestosPage() {
   };
 
   const startEditCategoria = (categoria: Categoria) => {
+    if (!canManageCategories) {
+      setErrorMessage('No tienes permisos para editar categorías.');
+      return;
+    }
+
     if (categoria.esGlobal) {
       return;
     }
@@ -269,6 +283,11 @@ export default function PresupuestosPage() {
   };
 
   const saveEditCategoria = async (id: string | number) => {
+    if (!canManageCategories) {
+      setErrorMessage('No tienes permisos para actualizar categorías.');
+      return;
+    }
+
     const nombre = categoriaEditForm.nombre.trim();
     if (!nombre) {
       setErrorMessage('El nombre de la categoría es obligatorio.');
@@ -295,6 +314,11 @@ export default function PresupuestosPage() {
   };
 
   const handleDeleteCategoria = useCallback(async (categoria: Categoria) => {
+    if (!canManageCategories) {
+      setErrorMessage('No tienes permisos para eliminar categorías.');
+      return;
+    }
+
     if (categoria.esGlobal) {
       setErrorMessage('Las categorías globales no se pueden eliminar.');
       return;
@@ -322,7 +346,7 @@ export default function PresupuestosPage() {
     } finally {
       setSavingCategoria(false);
     }
-  }, [editingCategoriaId]);
+  }, [canManageCategories, editingCategoriaId]);
 
   return (
     <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10">
@@ -443,6 +467,15 @@ export default function PresupuestosPage() {
               <section className="rounded-theme-md border border-border bg-background p-4">
                 <h2 className="font-inter text-ds-body font-semibold text-text-primary">Gestionar categorías</h2>
 
+                {!canManageCategories ? (
+                  <div className="mt-4 rounded-theme-sm border border-warning/30 bg-warning/10 p-3">
+                    <p className="font-inter text-ds-secondary text-text-secondary">
+                      Tu rol no tiene permisos para crear, editar o eliminar categorías.
+                    </p>
+                  </div>
+                ) : null}
+
+                {canManageCategories ? (
                 <form onSubmit={handleCreateCategoria} className="mt-4 space-y-3">
                   <div>
                     <label className="font-inter mb-1 block text-ds-secondary text-text-secondary" htmlFor="categoria-nombre">
@@ -491,6 +524,7 @@ export default function PresupuestosPage() {
                     {savingCategoria ? 'Guardando...' : 'Agregar categoría'}
                   </Button>
                 </form>
+                ) : null}
 
                 <div className="mt-4 space-y-3">
                   {categoriasOrdenadas.length === 0 ? (
@@ -559,7 +593,7 @@ export default function PresupuestosPage() {
                                 </p>
                               </div>
 
-                              {!isGlobal ? (
+                              {!isGlobal && canManageCategories ? (
                                 <div className="flex gap-2">
                                   <button
                                     type="button"
@@ -579,7 +613,7 @@ export default function PresupuestosPage() {
                                 </div>
                               ) : (
                                 <span className="font-inter rounded-theme-sm border border-border px-2 py-1 text-[12px] text-text-secondary">
-                                  Protegida
+                                  {isGlobal ? 'Protegida' : 'Solo lectura'}
                                 </span>
                               )}
                             </div>

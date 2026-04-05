@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import {
+  emitAccessForbidden,
   emitCategoriasUpdated,
   emitPresupuestosUpdated,
   emitGastosUpdated,
@@ -85,6 +86,10 @@ class ApiClient {
           if (error.response.status === 401) {
             clearBackendSession();
             emitSessionExpired();
+          }
+
+          if (error.response.status === 403) {
+            emitAccessForbidden();
           }
 
           const apiError: ApiError = {
