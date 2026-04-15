@@ -12,6 +12,14 @@
 - npm
 - Proyecto de Supabase (opcional en desarrollo si usas fallback en memoria)
 
+## Documentación
+
+- **[Índice `docs/`](docs/README.md)** — tabla de toda la documentación técnica.
+- **[Guía completa: seguridad, autenticación y RBAC](docs/GUIA-COMPLETA-SEGURIDAD-Y-AUTH.md)** — punto de entrada recomendado.
+- [RBAC técnico (middlewares y rutas)](docs/RBAC-AUTENTICACION.md)
+- [QA pruebas P1–P11 (cURL + Jest)](docs/QA-RBAC-P1-P11.md)
+- [Tokens JWT y mensajes accesibles (UI)](docs/TOKENS-Y-MENSAJES-ACCESIBLES.md)
+
 ## Instalación
 
 ```bash

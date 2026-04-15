@@ -105,6 +105,9 @@ export default function LoginPage() {
     }
   };
 
+  const safeApiError =
+    formError || (error?.message ? getSafeLoginErrorMessage(error.message) : '');
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -146,7 +149,7 @@ export default function LoginPage() {
               )}
               <div aria-live="polite" role="status" className="sr-only">
                 {loading && 'Iniciando sesión...'}
-                {!loading && (formError || error?.message || '')}
+                {!loading && safeApiError}
               </div>
               <Input
                 id="email"
@@ -183,11 +186,11 @@ export default function LoginPage() {
                 error={fieldErrors.password}
               />
 
-              {(formError || error?.message) && (
+              {safeApiError ? (
                 <p role="alert" className="font-inter text-ds-secondary text-error">
-                  {formError || error?.message}
+                  {safeApiError}
                 </p>
-              )}
+              ) : null}
 
               <div className="flex items-center justify-between text-ds-secondary">
                 <label className="font-inter flex items-center gap-2 text-text-secondary">

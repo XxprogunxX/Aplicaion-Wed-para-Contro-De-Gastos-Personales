@@ -31,7 +31,7 @@ export default function Input({ label, error, className = '', id, name, ...props
         {...props}
       />
       {error && (
-        <p id={errorId} className="font-inter mt-1 text-ds-secondary text-error" role="status" aria-live="polite">
+        <p id={errorId} className="font-inter mt-1 text-ds-secondary text-error" role="alert" aria-live="polite">
           {error}
         </p>
       )}
