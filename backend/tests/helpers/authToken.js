@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../../src/config/jwtEnv');
 
 const DEFAULT_TEST_USER = {
   id: '00000000-0000-0000-0000-000000000001',
@@ -13,7 +14,7 @@ function createTestToken(overrides = {}) {
     ...overrides,
   };
 
-  const secret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+  const secret = getJwtSecret();
 
   return jwt.sign(
     {

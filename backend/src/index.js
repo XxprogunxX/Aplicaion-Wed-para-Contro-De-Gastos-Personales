@@ -6,15 +6,23 @@ const app = express();
 const cors = require('cors');
 require('dotenv').config();
 
+const { assertProductionJwtSecret } = require('./config/jwtEnv');
+assertProductionJwtSecret();
+
 // Middlewares
 const errorHandler = require('./middleware/errorHandler');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const authMiddleware = require('./middleware/auth');
+const verifyToken = require('./middleware/authMiddleware');
+const { authorizeRole } = require('./middleware/roleMiddleware');
 const { isSupabaseConfigured, supabaseKeyMode } = require('./config/supabase');
 
 // Rutas
 const gastosRoutes = require('./routes/routes');
 const authRoutes = require('./routes/authRoutes');
+const rbacPublicRoutes = require('./routes/rbacPublicRoutes');
+const rbacProtectedRoutes = require('./routes/rbacProtectedRoutes');
+const adminRbacRoutes = require('./routes/adminRbacRoutes');
 const categoriasRoutes = require('./routes/categoriasRoutes');
 const presupuestosRoutes = require('./routes/presupuestosRoutes');
 const reportesRoutes = require('./routes/reportesRoutes');
@@ -55,7 +63,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor ejecutándose' });
 });
 
-// Rutas públicas
+// Especificación RBAC (rutas raíz): /login, /registro, /perfil, /historial, /admin/*
+app.use('/', rbacPublicRoutes);
+app.use('/', rbacProtectedRoutes);
+app.use('/admin', verifyToken, authorizeRole('admin'), adminRbacRoutes);
+
+// Rutas públicas API (compatibilidad cliente)
 app.use('/api/auth', authRoutes);
 
 // Rutas protegidas (requieren autenticación)

@@ -3,9 +3,11 @@ const jwt = require('jsonwebtoken');
 const { randomUUID } = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { supabase, isSupabaseConfigured } = require('../config/supabase');
+const { getJwtSecret } = require('../config/jwtEnv');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+const JWT_SECRET = getJwtSecret();
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
+const ADMIN_DEMO_ID = '10000000-0000-0000-0000-000000000001';
 const DEFAULT_ROLE = 'user';
 const PASSWORD_RECOVERY_SUCCESS_MESSAGE =
 	'Si el correo existe, recibirás instrucciones para restablecer tu contraseña';
@@ -59,6 +61,14 @@ const users = [
 		email: 'demo@gastos.app',
 		role: DEFAULT_ROLE,
 		passwordHash: bcrypt.hashSync('123456', 10),
+		createdAt: new Date().toISOString(),
+	},
+	{
+		id: ADMIN_DEMO_ID,
+		username: 'Admin Demo',
+		email: 'admin@gastos.app',
+		role: 'admin',
+		passwordHash: bcrypt.hashSync('admin123', 10),
 		createdAt: new Date().toISOString(),
 	},
 ];
@@ -509,10 +519,39 @@ function getProfile(req, res) {
 	});
 }
 
+const PROTECTED_USER_IDS = new Set([String(DEMO_USER_ID), String(ADMIN_DEMO_ID)]);
+
+function listLocalUsersSanitized() {
+	return users.map((u) => ({
+		id: String(u.id),
+		email: u.email,
+		username: u.username,
+		role: normalizeRole(u.role),
+		createdAt: u.createdAt,
+	}));
+}
+
+function removeLocalUserById(rawId) {
+	const id = String(rawId || '');
+	if (!id || PROTECTED_USER_IDS.has(id)) {
+		return { ok: false, reason: 'protected_or_missing' };
+	}
+	const idx = users.findIndex((u) => String(u.id) === id);
+	if (idx < 0) {
+		return { ok: false, reason: 'not_found' };
+	}
+	users.splice(idx, 1);
+	return { ok: true };
+}
+
 module.exports = {
 	register,
 	login,
 	forgotPassword,
 	logout,
 	getProfile,
+	listLocalUsersSanitized,
+	removeLocalUserById,
+	ADMIN_DEMO_ID,
+	DEMO_USER_ID,
 };
