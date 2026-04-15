@@ -6,7 +6,7 @@ describe('Auth middleware (API protegida)', () => {
     const response = await request(app).get('/api/gastos');
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ error: 'Unauthorized' });
+    expect(response.body).toEqual({ error: true, message: 'Token requerido' });
   });
 
   it('rechaza cuando el token es invalido', async () => {
@@ -15,6 +15,6 @@ describe('Auth middleware (API protegida)', () => {
       .set('Authorization', 'Bearer token-invalido');
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ error: 'Unauthorized' });
+    expect(response.body).toEqual({ error: true, message: 'Token inválido o expirado' });
   });
 });

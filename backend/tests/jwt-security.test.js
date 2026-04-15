@@ -10,58 +10,60 @@ describe('JWT_SECRET - Seguridad en Producción', () => {
   afterEach(() => {
     process.env.NODE_ENV = ORIGINAL_NODE_ENV;
     process.env.JWT_SECRET = ORIGINAL_JWT_SECRET;
-    // Limpiar require cache
-    delete require.cache[require.resolve('../src/config/jwtEnv')];
   });
 
   test('En development, JWT_SECRET puede tener valor por defecto', () => {
-    process.env.NODE_ENV = 'development';
-    process.env.JWT_SECRET = 'dev-secret';
-
     const { getJwtSecret } = require('../src/config/jwtEnv');
     expect(() => getJwtSecret()).not.toThrow();
   });
 
   test('En production, JWT_SECRET debe estar configurado', () => {
-    process.env.NODE_ENV = 'production';
-    process.env.JWT_SECRET = 'production-secret-super-fuerte-32-caracteres-minimo';
-
-    const { getJwtSecret } = require('../src/config/jwtEnv');
-    const secret = getJwtSecret();
-    expect(secret).toBeTruthy();
-    expect(secret).not.toBe('development-secret');
+    const { assertProductionJwtSecret, getJwtSecret } = require('../src/config/jwtEnv');
+    const testEnv = {
+      NODE_ENV: 'production',
+      JWT_SECRET: 'production-secret-super-fuerte-32-caracteres-minimo',
+    };
+    
+    expect(() => assertProductionJwtSecret(testEnv)).not.toThrow();
   });
 
   test('En production, JWT_SECRET vacío debe fallar', () => {
-    process.env.NODE_ENV = 'production';
-    process.env.JWT_SECRET = '';
-
-    // Limpiar cache antes de require
-    delete require.cache[require.resolve('../src/config/jwtEnv')];
+    const { assertProductionJwtSecret } = require('../src/config/jwtEnv');
+    const testEnv = {
+      NODE_ENV: 'production',
+      JWT_SECRET: '',
+    };
 
     expect(() => {
-      require('../src/config/jwtEnv');
+      assertProductionJwtSecret(testEnv);
     }).toThrow();
   });
 
   test('En production sin JWT_SECRET debe fallar', () => {
-    process.env.NODE_ENV = 'production';
-    delete process.env.JWT_SECRET;
-
-    // Limpiar cache
-    delete require.cache[require.resolve('../src/config/jwtEnv')];
+    const { assertProductionJwtSecret } = require('../src/config/jwtEnv');
+    const testEnv = {
+      NODE_ENV: 'production',
+      // JWT_SECRET no está definido (undefined)
+    };
 
     expect(() => {
-      require('../src/config/jwtEnv');
+      assertProductionJwtSecret(testEnv);
     }).toThrow();
   });
 
   test('JWT_SECRET debe tener mínimo 32 caracteres en production', () => {
-    process.env.NODE_ENV = 'production';
+    const { assertProductionJwtSecret } = require('../src/config/jwtEnv');
     const secretShort = 'short'; // Inseguro
+    const testEnv = {
+      NODE_ENV: 'production',
+      JWT_SECRET: secretShort,
+    };
 
     // Este test documenta la recomendación de seguridad
     expect(secretShort.length).toBeLessThan(32);
     console.warn('⚠️ JWT_SECRET muy corto - usar mínimo 256 bits (43 caracteres base64)');
+    
+    // Secreto corto debería fallar en producción
+    expect(() => assertProductionJwtSecret(testEnv)).toThrow();
   });
 });

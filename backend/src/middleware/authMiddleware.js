@@ -1,7 +1,7 @@
 /**
  * verifyToken — Valida JWT (firma y expiración).
  * Adjunta req.user = { id, email, role } (+ username si existe en el payload).
- * 401: sin token, token inválido o expirado → { "error": "Unauthorized" }
+ * 401: sin token, token inválido o expirado → { "error": true, "message": "..." }
  */
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../config/jwtEnv');
@@ -12,20 +12,20 @@ function normalizeRole(value) {
   return String(value || '').trim().toLowerCase() === 'admin' ? 'admin' : DEFAULT_ROLE;
 }
 
-function sendUnauthorized(res) {
-  return res.status(401).json({ error: 'Unauthorized' });
+function sendUnauthorized(res, message = 'Unauthorized') {
+  return res.status(401).json({ error: true, message });
 }
 
 function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return sendUnauthorized(res);
+    return sendUnauthorized(res, 'Token requerido');
   }
 
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) {
-    return sendUnauthorized(res);
+    return sendUnauthorized(res, 'Token requerido');
   }
 
   try {
@@ -33,7 +33,7 @@ function verifyToken(req, res, next) {
     const rawUserId = payload?.id ?? payload?.sub;
 
     if (rawUserId === undefined || rawUserId === null || rawUserId === '') {
-      return sendUnauthorized(res);
+      return sendUnauthorized(res, 'Token inválido');
     }
 
     req.user = {
@@ -45,7 +45,7 @@ function verifyToken(req, res, next) {
 
     return next();
   } catch {
-    return sendUnauthorized(res);
+    return sendUnauthorized(res, 'Token inválido o expirado');
   }
 }
 

@@ -33,7 +33,7 @@ describe('RBAC especificación — P1–P11', () => {
     it('retorna Unauthorized', async () => {
       const res = await request(app).get('/perfil');
       expect(res.status).toBe(401);
-      expect(res.body).toEqual({ error: 'Unauthorized' });
+      expect(res.body).toEqual({ error: true, message: 'Token requerido' });
     });
   });
 
@@ -41,7 +41,7 @@ describe('RBAC especificación — P1–P11', () => {
     it('retorna Unauthorized', async () => {
       const res = await request(app).get('/perfil').set('Authorization', 'Bearer no-es-un-jwt');
       expect(res.status).toBe(401);
-      expect(res.body).toEqual({ error: 'Unauthorized' });
+      expect(res.body).toEqual({ error: true, message: 'Token inválido o expirado' });
     });
   });
 
@@ -71,7 +71,7 @@ describe('RBAC especificación — P1–P11', () => {
     it('retorna Unauthorized', async () => {
       const res = await request(app).get('/admin/usuarios');
       expect(res.status).toBe(401);
-      expect(res.body).toEqual({ error: 'Unauthorized' });
+      expect(res.body).toEqual({ error: true, message: 'Token requerido' });
     });
   });
 
