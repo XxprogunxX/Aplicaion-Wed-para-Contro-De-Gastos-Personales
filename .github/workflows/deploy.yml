@@ -1,0 +1,179 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      backend:
+        description: 'Deploy backend?'
+        required: false
+        default: true
+        type: boolean
+      frontend:
+        description: 'Deploy frontend?'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NODE_VERSION: '20.x'
+  REGISTRY: ghcr.io
+
+concurrency:
+  group: deploy-${{ github.ref }}-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Deploy
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy-backend: ${{ steps.validate.outputs.backend }}
+      should-deploy-frontend: ${{ steps.validate.outputs.frontend }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate branch
+      id: validate
+      run: |
+        if [ "${{ github.ref }}" != "refs/heads/master" ] && [ "${{ github.event.inputs.environment }}" == "production" ]; then
+          echo "❌ Production deployments only allowed from master branch"
+          exit 1
+        fi
+        
+        echo "backend=${{ github.event.inputs.backend }}" >> $GITHUB_OUTPUT
+        echo "frontend=${{ github.event.inputs.frontend }}" >> $GITHUB_OUTPUT
+        echo "✅ Deploy validation passed"
+
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.should-deploy-backend == 'true'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Run tests
+      working-directory: ./backend
+      run: npm test
+
+    - name: Build Docker image
+      working-directory: ./backend
+      run: docker build -t gastos-backend:${{ github.sha }} -t gastos-backend:${{ github.event.inputs.environment }} .
+
+    - name: Log in to registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push Docker image
+      run: |
+        docker tag gastos-backend:${{ github.sha }} ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }}
+        docker tag gastos-backend:${{ github.event.inputs.environment }} ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.event.inputs.environment }}
+        docker push ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.event.inputs.environment }}
+
+    - name: Notify deployment
+      run: |
+        echo "🚀 Backend deployed to ${{ github.event.inputs.environment }}"
+        echo "Image: ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.event.inputs.environment }}"
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.should-deploy-frontend == 'true'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run tests
+      working-directory: ./frontend
+      run: npm test -- --ci --passWithNoTests
+
+    - name: Type check
+      working-directory: ./frontend
+      run: npm run type-check
+
+    - name: Build production
+      working-directory: ./frontend
+      run: npm run build
+
+    - name: Check bundle size
+      working-directory: ./frontend
+      run: npm run bundle:check
+
+    - name: Build Docker image
+      working-directory: ./frontend
+      run: docker build -t gastos-frontend:${{ github.sha }} -t gastos-frontend:${{ github.event.inputs.environment }} .
+
+    - name: Log in to registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push Docker image
+      run: |
+        docker tag gastos-frontend:${{ github.sha }} ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.sha }}
+        docker tag gastos-frontend:${{ github.event.inputs.environment }} ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.event.inputs.environment }}
+        docker push ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.event.inputs.environment }}
+
+    - name: Notify deployment
+      run: |
+        echo "🚀 Frontend deployed to ${{ github.event.inputs.environment }}"
+        echo "Image: ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.event.inputs.environment }}"
+
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [validate, deploy-backend, deploy-frontend]
+    if: always()
+
+    steps:
+    - name: Generate summary
+      run: |
+        echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Backend:** ${{ needs.deploy-backend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Frontend:** ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

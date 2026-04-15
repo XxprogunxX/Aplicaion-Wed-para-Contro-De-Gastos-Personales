@@ -1,0 +1,121 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  validate-pr:
+    name: Validate Pull Request
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate PR title
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const title = context.payload.pull_request.title;
+          const validPrefixes = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'ci'];
+          const hasValidPrefix = validPrefixes.some(prefix => title.startsWith(prefix + '(') || title.startsWith(prefix + ':'));
+          
+          if (!hasValidPrefix) {
+            core.setFailed(`❌ PR title must start with one of: ${validPrefixes.join(', ')}`);
+            core.notice(`Examples:\n- feat(auth): add login form\n- fix(api): handle null response\n- docs: update README`);
+          } else {
+            core.info(`✅ PR title is valid: "${title}"`);
+          }
+
+    - name: Validate PR description
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const body = context.payload.pull_request.body;
+          
+          if (!body || body.trim().length < 10) {
+            core.warning('⚠️ PR description is empty or too short');
+            core.notice('Please provide a detailed description of your changes');
+          } else {
+            core.info('✅ PR has description');
+          }
+
+    - name: Check for labels
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const labels = context.payload.pull_request.labels.map(l => l.name);
+          const hasLabel = labels.length > 0;
+          
+          if (!hasLabel) {
+            core.warning('⚠️ PR has no labels. Consider adding: type (feature/bug/docs), component (frontend/backend), or priority');
+          } else {
+            core.info(`✅ PR has labels: ${labels.join(', ')}`);
+          }
+
+    - name: Check for reviewers
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const reviewers = context.payload.pull_request.requested_reviewers.length;
+          
+          if (reviewers === 0) {
+            core.warning('⚠️ No reviewers assigned. Please request at least one reviewer');
+          } else {
+            core.info(`✅ PR has ${reviewers} reviewer(s) assigned`);
+          }
+
+    - name: Check for linked issues
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const body = context.payload.pull_request.body || '';
+          const hasIssueLink = /#\d+|closes #\d+|fixes #\d+|resolves #\d+/i.test(body);
+          
+          if (!hasIssueLink) {
+            core.info('ℹ️ No linked issue found. Consider linking with "closes #123"');
+          } else {
+            core.info('✅ PR has linked issue');
+          }
+
+    - name: Comment PR checklist
+      if: github.event.action == 'opened'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const comment = `## 📋 PR Checklist
+
+          Thanks for your PR! Please ensure:
+
+          - [ ] Title follows convention: \`type(scope): description\`
+          - [ ] Description explains the changes clearly
+          - [ ] Related issue is linked (use \`closes #123\`)
+          - [ ] Labels are set (feature/bug/docs, frontend/backend)
+          - [ ] Reviewers are assigned
+          - [ ] Tests are included/updated
+          - [ ] No console errors or warnings
+
+          ### Type prefixes
+          - \`feat\` - New feature
+          - \`fix\` - Bug fix
+          - \`docs\` - Documentation
+          - \`style\` - Code style (no logic change)
+          - \`refactor\` - Code refactor
+          - \`perf\` - Performance improvement
+          - \`test\` - Test updates
+          - \`chore\` - Build/CI changes
+          - \`ci\` - CI/CD changes
+
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

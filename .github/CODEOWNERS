@@ -1,0 +1,30 @@
+# Code ownership configuration
+# Automatically request reviews based on file changes
+
+# Default owner for entire repo
+* @oscar
+
+# Backend
+backend/ @oscar
+backend/src/controllers/ @oscar
+backend/src/routes/ @oscar
+backend/src/middleware/ @oscar
+backend/tests/ @oscar
+
+# Frontend
+frontend/ @oscar
+frontend/src/app/ @oscar
+frontend/src/components/ @oscar
+frontend/src/hooks/ @oscar
+frontend/src/utils/ @oscar
+
+# Configuration & CI/CD
+.github/ @oscar
+docker-compose.yml @oscar
+Dockerfile @oscar
+package.json @oscar
+tsconfig.json @oscar
+
+# Documentation
+*.md @oscar
+docs/ @oscar

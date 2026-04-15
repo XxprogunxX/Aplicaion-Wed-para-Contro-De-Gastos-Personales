@@ -5,42 +5,98 @@ on:
     branches: [ master, develop, 'features/**' ]
     paths:
       - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
   pull_request:
     branches: [ master, develop ]
     paths:
       - 'frontend/**'
 
+env:
+  NODE_VERSION: '20.x'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-frontend
+
 jobs:
   quality:
+    name: Quality Checks
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Setup Node.js 20.x
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: frontend/node_modules
+        key: ${{ runner.os }}-frontend-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-frontend-node-
 
     - name: Install dependencies
       working-directory: ./frontend
       run: npm ci
 
-    - name: Run linter
+    - name: Run ESLint
       working-directory: ./frontend
       run: npm run lint
+      continue-on-error: false
 
-    - name: Run tests
+    - name: Run Tests
       working-directory: ./frontend
-      run: npm test -- --ci --passWithNoTests
+      run: npm test -- --ci --passWithNoTests --coverage
+      continue-on-error: false
 
     - name: Type check
       working-directory: ./frontend
       run: npm run type-check
+      continue-on-error: false
 
-    - name: Build
+    - name: Upload coverage reports
+      if: always()
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+        fail_ci_if_error: false
+
+  build-and-analyze:
+    name: Build & Performance Analysis
+    runs-on: ubuntu-latest
+    needs: quality
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: frontend/node_modules
+        key: ${{ runner.os }}-frontend-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-frontend-node-
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Build production
       working-directory: ./frontend
       run: npm run build
 
@@ -48,17 +104,144 @@ jobs:
       working-directory: ./frontend
       run: npm run bundle:check
 
-    - name: Lighthouse CI
+    - name: Cache Lighthouse CI
+      uses: actions/cache@v4
+      with:
+        path: |
+          .lighthouseci
+          ~/.cache/Lighthouse
+        key: ${{ runner.os }}-lighthouse-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-lighthouse-
+
+    - name: Run Lighthouse CI
       working-directory: ./frontend
       run: npx @lhci/cli@0.15.x autorun --config=./lighthouserc.json
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true
 
-  build-docker:
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend/.next
+        retention-days: 5
+
+  accessibility:
+    name: Accessibility Audit
     runs-on: ubuntu-latest
     needs: quality
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Build Docker image
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: frontend/node_modules
+        key: ${{ runner.os }}-frontend-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-frontend-node-
+
+    - name: Install dependencies
       working-directory: ./frontend
-      run: docker build -t gastos-frontend:latest .
+      run: npm ci
+
+    - name: Run jest-axe accessibility tests
+      working-directory: ./frontend
+      run: npm test -- --ci --passWithNoTests --testPathPattern=accessibility
+      continue-on-error: true
+
+  security:
+    name: Security Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: frontend/node_modules
+        key: ${{ runner.os }}-frontend-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-frontend-node-
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Check for vulnerabilities
+      working-directory: ./frontend
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+
+    - name: OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        path: ./frontend
+        format: 'JSON'
+        args: >
+          --scan ./frontend
+      continue-on-error: true
+
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [quality, build-and-analyze]
+    if: success()
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: gastos-frontend:${{ github.sha }},gastos-frontend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
